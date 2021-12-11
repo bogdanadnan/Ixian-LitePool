@@ -961,6 +961,14 @@ Console.WriteLine("Added POW data to block {0}, miner {1}", minedBlockNum, mined
             return false;
         }
 
+        public void resetActivelyMiningBlock()
+        {
+            lock (activePoolBlockLock)
+            {
+                activePoolBlock = null;
+            }
+        }
+
         public bool sendSolution(byte[] nonce, ulong blocknum)
         {
             WalletStorage ws = IxianHandler.getWalletStorage();
@@ -978,12 +986,27 @@ Console.WriteLine("Added POW data to block {0}, miner {1}", minedBlockNum, mined
                 }
             }
 
+            lock (activePoolBlockLock)
+            {
+                lock (solvedBlocks) // TODO - check transaction addresses to detect solved blocks
+                {
+                    solvedBlocks.Add(activePoolBlock);
+                }
+            }
+
             Transaction transaction = new Transaction((int) Transaction.Type.PoWSolution, new IxiNumber(0),
                 new IxiNumber(0), ConsensusConfig.ixianInfiniMineAddress, from, data, pubkey,
                 getHighestKnownNetworkBlockHeight());
             if (IxianHandler.addTransaction(transaction, true))
             {
                 Console.WriteLine("Sending transaction, txid: {0}\n", Transaction.txIdV8ToLegacy(transaction.id));
+                lock (activePoolBlockLock)
+                {
+                    lock (solvedBlocks) // TODO - check transaction addresses to detect solved blocks
+                    {
+                        solvedBlocks.Add(activePoolBlock);
+                    }
+                }
                 return true;
             }
             else

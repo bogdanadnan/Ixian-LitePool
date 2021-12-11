@@ -273,6 +273,7 @@ namespace LP.Network
                     Logging.info("Miner share {0} ACCEPTED.", nonce);
                     send_result = true;
                 }
+                node.resetActivelyMiningBlock();
             }
             else
             {
@@ -285,14 +286,12 @@ namespace LP.Network
         // Returns an empty PoW block based on the search algorithm provided as a parameter
         private JsonResponse onGetMiningBlock(Dictionary<string, object> parameters)
         {
-            if (!parameters.ContainsKey("algo"))
+            int algo = (int) BlockSearchMode.lowestDifficulty;
+            if (parameters.ContainsKey("algo"))
             {
-                JsonError error = new JsonError
-                    {code = (int) RPCErrorCode.RPC_INVALID_PARAMETER, message = "Parameter 'algo' is missing"};
-                return new JsonResponse {result = null, error = error};
+                algo = int.Parse((string) parameters["algo"]);
             }
 
-            int algo = int.Parse((string) parameters["algo"]);
             BlockSearchMode searchMode = BlockSearchMode.randomLowestDifficulty;
 
             if (algo == (int) BlockSearchMode.lowestDifficulty)
