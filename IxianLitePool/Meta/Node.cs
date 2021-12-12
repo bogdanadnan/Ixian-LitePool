@@ -452,17 +452,20 @@ namespace LP.Meta
                             }
                             else
                             {
-                                foreach (var txId in block.transactions)
+                                lock (transactionMapping)
                                 {
-                                    if (txId[0] == 0) // ignore staking rewards
+                                    foreach (var txId in block.transactions)
                                     {
-                                        continue;
-                                    }
+                                        if (txId[0] == 0) // ignore staking rewards
+                                        {
+                                            continue;
+                                        }
 
-                                    if (!transactionMapping.ContainsKey(txId))
-                                    {
-                                        Console.WriteLine("Adding transaction mapping block {0} tx id {1}", block.blockNum, Transaction.txIdV8ToLegacy(txId));
-                                        transactionMapping.Add(txId, block.blockNum);
+                                        if (!transactionMapping.ContainsKey(txId))
+                                        {
+                                            Console.WriteLine("Adding transaction mapping block {0} tx id {1}", block.blockNum, Transaction.txIdV8ToLegacy(txId));
+                                            transactionMapping.Add(txId, block.blockNum);
+                                        }
                                     }
                                 }
                                 currentRequest.endpoint = broadcastGetBlock(block.blockNum, null, endpoint, 1, false);
@@ -607,90 +610,88 @@ namespace LP.Meta
         {
             lock (blockRepository)
             {
-                lock (currentRequestLock)
+                Block blk = currentRequest.block;
+                List<Transaction> txs = currentRequest.transactions.Where(tx => tx.type == (int)Transaction.Type.PoWSolution).ToList();
+
+                if (!blockRepository.ContainsKey(blk.blockNum))
                 {
-                    Block blk = currentRequest.block;
-                    List<Transaction> txs = currentRequest.transactions.Where(tx => tx.type == (int)Transaction.Type.PoWSolution).ToList();
-
-                    if (!blockRepository.ContainsKey(blk.blockNum))
+                    blk.transactions.Clear(); // clear transaction data, is not needed anymore
+                    blockRepository.Add(blk.blockNum, blk);
+                    lock (activePoolBlockLock)
                     {
-                        blk.transactions.Clear(); // clear transaction data, is not needed anymore
-                        blockRepository.Add(blk.blockNum, blk);
-                        lock(activePoolBlockLock)
-                        {
-                            lock (knownSolvedBlocks)
-                            {
-                                if (activePoolBlock != null && activePoolBlock.difficulty > blk.difficulty && !knownSolvedBlocks.ContainsKey(blk.blockNum))
-                                {
-                                    Console.WriteLine("Currently mined block has a higher difficulty than the last received one, switching to new block.");
-                                    activePoolBlock = null;
-                                }
-                            }
-                        }
-                    }
-
-                    lock (transactionMapping)
-                    {
-                        var toRemove = transactionMapping.Where(tm => tm.Value == currentRequest.blockNum);
-                        foreach (var tm in toRemove)
-                        {
-                            transactionMapping.Remove(tm.Key);
-                        }
-                    }
-
-                    currentRequest = null;
-
-                    foreach (Transaction tx in txs)
-                    {
-                        ulong minedBlockNum = 0;
-                        // Extract the block number
-                        using (MemoryStream m = new MemoryStream(tx.data))
-                        {
-                            using (BinaryReader reader = new BinaryReader(m))
-                            {
-                                minedBlockNum = reader.ReadUInt64();
-                            }
-                        }
-
-                        Console.WriteLine("Found POW transaction, adding block {0} - miner {1} to known solved blocks list", minedBlockNum, (new Address(tx.pubKey)).ToString());
-
                         lock (knownSolvedBlocks)
                         {
-                            if (knownSolvedBlocks.ContainsKey(minedBlockNum))
+                            if (activePoolBlock != null && activePoolBlock.difficulty > blk.difficulty && !knownSolvedBlocks.ContainsKey(blk.blockNum))
                             {
-                                knownSolvedBlocks[minedBlockNum].Add(tx);
-                            }
-                            else
-                            {
-                                knownSolvedBlocks.Add(minedBlockNum, new List<Transaction>() { tx });
-                            }
-                        }
-
-                        lock (activePoolBlockLock)
-                        {
-                            if (activePoolBlock != null && activePoolBlock.blockNum == minedBlockNum)
-                            {
-Console.WriteLine("Block that was currently mined has already been resolved by someone else, resetting active mining block");
+Console.WriteLine("Currently mined block has a higher difficulty than the last received one, switching to new block.");
                                 activePoolBlock = null;
                             }
                         }
                     }
                 }
 
-                while (blockRepository.Count >= (long)ConsensusConfig.getRedactedWindowSize())
+                lock (transactionMapping)
                 {
-                    ulong toRemove = blockRepository.Keys.Min();
+                    var toRemove = transactionMapping.Where(tm => tm.Value == currentRequest.blockNum).ToList();
+                    foreach (var tm in toRemove)
+                    {
+                        transactionMapping.Remove(tm.Key);
+                    }
+                }
+
+                currentRequest = null;
+
+                foreach (Transaction tx in txs)
+                {
+                    ulong minedBlockNum = 0;
+                    // Extract the block number
+                    using (MemoryStream m = new MemoryStream(tx.data))
+                    {
+                        using (BinaryReader reader = new BinaryReader(m))
+                        {
+                            minedBlockNum = reader.ReadUInt64();
+                        }
+                    }
+
+Console.WriteLine("Found POW transaction, adding block {0} - miner {1} to known solved blocks list", minedBlockNum, (new Address(tx.pubKey)).ToString());
+
+                    lock (knownSolvedBlocks)
+                    {
+                        if (knownSolvedBlocks.ContainsKey(minedBlockNum))
+                        {
+                            knownSolvedBlocks[minedBlockNum].Add(tx);
+                        }
+                        else
+                        {
+                            knownSolvedBlocks.Add(minedBlockNum, new List<Transaction>() { tx });
+                        }
+                    }
+
                     lock (activePoolBlockLock)
                     {
-                        if (activePoolBlock != null && activePoolBlock.blockNum == toRemove)
+                        if (activePoolBlock != null && activePoolBlock.blockNum == minedBlockNum)
                         {
-Console.WriteLine("Block that was currently mined is too old, resetting active mining block");
+Console.WriteLine("Block that was currently mined has already been resolved by someone else, resetting active mining block");
                             activePoolBlock = null;
                         }
                     }
-                    blockRepository.Remove(toRemove);
                 }
             }
+
+            while (blockRepository.Count >= (long)ConsensusConfig.getRedactedWindowSize())
+            {
+                ulong toRemove = blockRepository.Keys.Min();
+                lock (activePoolBlockLock)
+                {
+                    if (activePoolBlock != null && activePoolBlock.blockNum == toRemove)
+                    {
+Console.WriteLine("Block that was currently mined is too old, resetting active mining block");
+                        activePoolBlock = null;
+                    }
+                }
+                blockRepository.Remove(toRemove);
+            }
+
         }
 
         public override Block getLastBlock()
