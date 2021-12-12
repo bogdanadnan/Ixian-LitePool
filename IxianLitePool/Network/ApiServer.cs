@@ -36,7 +36,7 @@ namespace LP.Network
             start(listen_URLs, authorized_users, allowed_IPs);
         }
 
-        protected virtual void onUpdate(HttpListenerContext context)
+        protected override void onUpdate(HttpListenerContext context)
         {
             try
             {
@@ -273,7 +273,6 @@ namespace LP.Network
                     Logging.info("Miner share {0} ACCEPTED.", nonce);
                     send_result = true;
                 }
-                node.resetActivelyMiningBlock();
             }
             else
             {

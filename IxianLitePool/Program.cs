@@ -4,6 +4,8 @@ using LP.Meta;
 using System;
 using System.Threading;
 using LP.Network;
+using LP.Pool;
+using Microsoft.Owin.Hosting;
 
 namespace IxianLitePool
 {
@@ -24,9 +26,14 @@ namespace IxianLitePool
 
             Console.WriteLine("Ixian Lite Pool {0} ({1})", Config.version, CoreConfig.version);
 
-            onStart(args);
-            mainLoop();
-            onStop();
+            string domainAddress = "http://localhost/";
+
+            using (WebApp.Start(url: domainAddress))
+            {
+                onStart(args);
+                mainLoop();
+                onStop();
+            }
         }
 
         static void onStart(string[] args)
