@@ -538,6 +538,7 @@ namespace LP.Meta
                 }
 
                 bool txsUpdated = false;
+                bool txsForCurrentRequest = false;
 
                 using (MemoryStream m = new MemoryStream(data))
                 {
@@ -571,6 +572,8 @@ namespace LP.Meta
                                     continue;
                                 }
 
+                                txsForCurrentRequest = true;
+
                                 if (!currentRequest.transactions.Any(t => t.id.SequenceEqual(tx.id)))
                                 {
                                     currentRequest.transactions.Add(tx);
@@ -579,6 +582,11 @@ namespace LP.Meta
                             }
                         }
                     }
+                }
+
+                if(txsForCurrentRequest)
+                {
+                    currentRequest.timeStamp = DateTime.Now;
                 }
 
                 if (txsUpdated)
