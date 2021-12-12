@@ -181,7 +181,6 @@ namespace LP.Network
 
                     case ProtocolMessageCode.blockHeaders2:
                         {
-Console.WriteLine("Received block header data");
  //                           // Forward the block headers to the TIV handler
                             Node.tiv.receivedBlockHeaders2(data, endpoint);
                         }
@@ -195,7 +194,6 @@ Console.WriteLine("Received block header data");
 
                     case ProtocolMessageCode.transactionData:
                         {
-Console.WriteLine("Received new transaction");
                             Transaction tx = new Transaction(data, true);
 
                             if (endpoint.presenceAddress.type == 'M' || endpoint.presenceAddress.type == 'H')
@@ -219,12 +217,10 @@ Console.WriteLine("Received new transaction");
                         break;
 
                     case ProtocolMessageCode.blockData:
-Console.WriteLine("Received block data");
                         node.handleBlockData(data, endpoint);
                         break;
                     
                     case ProtocolMessageCode.transactionsChunk2:
-Console.WriteLine("Received new transaction chunk2");
                         node.handleTransactionsChunk2(data, endpoint);
                         break;
 

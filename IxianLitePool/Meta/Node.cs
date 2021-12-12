@@ -32,30 +32,6 @@ namespace LP.Meta
         public List<Transaction> transactions = new List<Transaction>();
     }
 
-    public enum BlockSearchMode
-    {
-        lowestDifficulty,
-        randomLowestDifficulty,
-        latestBlock,
-        random
-    }
-
-    public class MinerData
-    {
-        public Address address;
-        public Transaction transaction;
-    }
-    public class PoolBlock : Block
-    {
-        public PoolBlock(Block data) : base(data)
-        {
-            reward = ConsensusConfig.calculateMiningRewardForBlock(data.blockNum);
-        }
-
-        public List<MinerData> miners = new List<MinerData>();
-        public IxiNumber reward;
-    }
-
     public class Node : IxianNode
     {
         private static uint blockRequestTimeout = 30;
@@ -65,17 +41,17 @@ namespace LP.Meta
         private ulong networkBlockHeight = 0;
 
         private Dictionary<byte[], ulong> transactionMapping = new Dictionary<byte[], ulong>(new ByteArrayComparer());
-        private Dictionary<ulong, PoolBlock> blockRepository = new Dictionary<ulong, PoolBlock>();
+        private Dictionary<ulong, Block> blockRepository = new Dictionary<ulong, Block>();
 
         private Dictionary<ulong, RequestData> requestsQueue = new Dictionary<ulong, RequestData>();
         private object currentRequestLock = new object();
         private RequestData currentRequest = null;
 
         private Dictionary<ulong, List<Transaction>> knownSolvedBlocks = new Dictionary<ulong, List<Transaction>>();
-        private List<PoolBlock> localSolvedBlocks = new List<PoolBlock>();
+        private List<Block> localSolvedBlocks = new List<Block>();
 
         private object activePoolBlockLock = new object();
-        private PoolBlock activePoolBlock = null;
+        private Block activePoolBlock = null;
 
         public static bool running = false;
 
@@ -632,7 +608,7 @@ namespace LP.Meta
                     if (!blockRepository.ContainsKey(blk.blockNum))
                     {
                         blk.transactions.Clear(); // clear transaction data, is not needed anymore
-                        blockRepository.Add(blk.blockNum, new PoolBlock(blk));
+                        blockRepository.Add(blk.blockNum, blk);
                         lock(activePoolBlockLock)
                         {
                             if(activePoolBlock != null && activePoolBlock.difficulty > blk.difficulty)
@@ -1024,7 +1000,7 @@ Console.WriteLine("Block that was currently mined is too old, resetting active m
             }
         }
 
-        public Block getMiningBlock(BlockSearchMode searchMode)
+        public Block getMiningBlock()
         {            
             lock (activePoolBlockLock)
             {

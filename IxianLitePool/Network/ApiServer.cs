@@ -285,41 +285,7 @@ namespace LP.Network
         // Returns an empty PoW block based on the search algorithm provided as a parameter
         private JsonResponse onGetMiningBlock(Dictionary<string, object> parameters)
         {
-            int algo = (int) BlockSearchMode.lowestDifficulty;
-            if (parameters.ContainsKey("algo"))
-            {
-                algo = int.Parse((string) parameters["algo"]);
-            }
-
-            BlockSearchMode searchMode = BlockSearchMode.randomLowestDifficulty;
-
-            if (algo == (int) BlockSearchMode.lowestDifficulty)
-            {
-                searchMode = BlockSearchMode.lowestDifficulty;
-            }
-            else if (algo == (int) BlockSearchMode.randomLowestDifficulty)
-            {
-                searchMode = BlockSearchMode.randomLowestDifficulty;
-            }
-            else if (algo == (int) BlockSearchMode.latestBlock)
-            {
-                searchMode = BlockSearchMode.latestBlock;
-            }
-            else if (algo == (int) BlockSearchMode.random)
-            {
-                searchMode = BlockSearchMode.random;
-            }
-            else
-            {
-                return new JsonResponse
-                {
-                    result = null,
-                    error = new JsonError()
-                        {code = (int) RPCErrorCode.RPC_INVALID_PARAMS, message = "Invalid algorithm was specified"}
-                };
-            }
-
-            Block block = node.getMiningBlock(searchMode);
+            Block block = node.getMiningBlock();
             if (block == null)
             {
                 return new JsonResponse
