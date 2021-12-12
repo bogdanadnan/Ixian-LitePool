@@ -563,7 +563,7 @@ namespace LP.Meta
                             byte[] tx_bytes = reader.ReadBytes(tx_len);
 
                             Transaction tx = new Transaction(tx_bytes);
-                            Console.WriteLine("Transaction id {0} type {1} block {2}", Transaction.txIdV8ToLegacy(tx.id), tx.type, tx.blockHeight);
+
                             lock (transactionMapping)
                             {
                                 if (!transactionMapping.ContainsKey(tx.id) || transactionMapping[tx.id] != currentRequest.blockNum)
