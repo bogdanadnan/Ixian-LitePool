@@ -48,7 +48,6 @@ namespace LP.Meta
         private RequestData currentRequest = null;
 
         private Dictionary<ulong, List<Transaction>> knownSolvedBlocks = new Dictionary<ulong, List<Transaction>>();
-        private List<Block> localSolvedBlocks = new List<Block>();
 
         private object activePoolBlockLock = new object();
         private Block activePoolBlock = null;
@@ -619,11 +618,23 @@ namespace LP.Meta
                         blockRepository.Add(blk.blockNum, blk);
                         lock(activePoolBlockLock)
                         {
-                            if(activePoolBlock != null && activePoolBlock.difficulty > blk.difficulty)
+                            lock (knownSolvedBlocks)
                             {
-Console.WriteLine("Currently mined block has a higher difficulty than the last received one, switching to new block.");
-                                activePoolBlock = null;
+                                if (activePoolBlock != null && activePoolBlock.difficulty > blk.difficulty && !knownSolvedBlocks.ContainsKey(blk.blockNum))
+                                {
+                                    Console.WriteLine("Currently mined block has a higher difficulty than the last received one, switching to new block.");
+                                    activePoolBlock = null;
+                                }
                             }
+                        }
+                    }
+
+                    lock (transactionMapping)
+                    {
+                        var toRemove = transactionMapping.Where(tm => tm.Value == currentRequest.blockNum);
+                        foreach (var tm in toRemove)
+                        {
+                            transactionMapping.Remove(tm.Key);
                         }
                     }
 
