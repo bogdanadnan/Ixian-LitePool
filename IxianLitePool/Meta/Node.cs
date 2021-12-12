@@ -121,7 +121,7 @@ namespace LP.Meta
                     {
                         lock (blockRepository)
                         {
-                            if (blockRepository.Count < (long)ConsensusConfig.getRedactedWindowSize() - 10)
+                            if (blockRepository.Count > 0 && blockRepository.Count < (long)ConsensusConfig.getRedactedWindowSize() - 10)
                             {
                                 ulong lowestBlockNum = blockRepository.Keys.Min() - 1;
                                 currentRequest = new RequestData
