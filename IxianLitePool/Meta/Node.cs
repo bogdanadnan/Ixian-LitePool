@@ -161,7 +161,7 @@ namespace LP.Meta
                                 // reset transaction mapping and request data and try again
                                 lock (transactionMapping)
                                 {
-                                    var toRemove = transactionMapping.Where(tm => tm.Value == currentRequest.blockNum);
+                                    var toRemove = transactionMapping.Where(tm => tm.Value == currentRequest.blockNum).ToList();
                                     foreach (var tm in toRemove)
                                     {
                                         transactionMapping.Remove(tm.Key);
