@@ -224,6 +224,10 @@ namespace LP.Network
                         node.handleTransactionsChunk2(data, endpoint);
                         break;
 
+                    case ProtocolMessageCode.blockHeight:
+                        node.handleBlockHeight(data, endpoint);
+                        break;
+
                     default:
                         break;
 

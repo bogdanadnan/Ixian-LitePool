@@ -32,6 +32,14 @@ namespace LP.Meta
         public List<Transaction> transactions = new List<Transaction>();
     }
 
+    public class PoolBlock
+    {
+        public ulong blockNum;
+        public int version;
+        public ulong difficulty;
+        public byte[] blockChecksum;
+    }
+
     public class Node : IxianNode
     {
         private static uint blockRequestTimeout = 30;
@@ -41,7 +49,7 @@ namespace LP.Meta
         private ulong networkBlockHeight = 0;
 
         private Dictionary<byte[], ulong> transactionMapping = new Dictionary<byte[], ulong>(new ByteArrayComparer());
-        private Dictionary<ulong, Block> blockRepository = new Dictionary<ulong, Block>();
+        private Dictionary<ulong, PoolBlock> blockRepository = new Dictionary<ulong, PoolBlock>();
 
         private Dictionary<ulong, RequestData> requestsQueue = new Dictionary<ulong, RequestData>();
         private object currentRequestLock = new object();
@@ -50,7 +58,7 @@ namespace LP.Meta
         private Dictionary<ulong, List<Transaction>> knownSolvedBlocks = new Dictionary<ulong, List<Transaction>>();
 
         private object activePoolBlockLock = new object();
-        private Block activePoolBlock = null;
+        private PoolBlock activePoolBlock = null;
 
         public static bool running = false;
 
@@ -120,7 +128,7 @@ namespace LP.Meta
                     {
                         lock (blockRepository)
                         {
-                            if (blockRepository.Count > 0 && blockRepository.Count < (long)ConsensusConfig.getRedactedWindowSize() - 10)
+                            if (blockRepository.Count > 0 && blockRepository.Count < (long)ConsensusConfig.getRedactedWindowSize() - 110) // pow transactions are not accepted for first 100 blocks in redacted window + adding additional 10 for safety
                             {
                                 ulong lowestBlockNum = blockRepository.Keys.Min() - 1;
                                 currentRequest = new RequestData
@@ -161,11 +169,7 @@ namespace LP.Meta
                                 // reset transaction mapping and request data and try again
                                 lock (transactionMapping)
                                 {
-                                    var toRemove = transactionMapping.Where(tm => tm.Value == currentRequest.blockNum).ToList();
-                                    foreach (var tm in toRemove)
-                                    {
-                                        transactionMapping.Remove(tm.Key);
-                                    }
+                                    transactionMapping.Clear();
                                 }
 
                                 currentRequest.block = null;
@@ -279,12 +283,10 @@ namespace LP.Meta
 
         public void start()
         {
-            PresenceList.init(IxianHandler.publicIP, 0, 'M');
-            NetworkUtils.configureNetwork("", 10234);
+            PresenceList.init(IxianHandler.publicIP, 0, 'C');
 
             // Start the network queue
             NetworkQueue.start();
-            NetworkServer.beginNetworkOperations();
 
             // Start the network client manager
             NetworkClientManager.start(2);
@@ -440,10 +442,10 @@ namespace LP.Meta
                 {
                     if (currentRequest != null && (currentRequest.blockNum == block.blockNum))
                     {
-                        currentRequest.timeStamp = DateTime.Now;
-
                         if (currentRequest.block == null)
                         {
+                            currentRequest.timeStamp = DateTime.Now;
+
                             currentRequest.block = block;
 
                             if (block.transactions.Count == 0 ||
@@ -456,6 +458,7 @@ namespace LP.Meta
                             {
                                 lock (transactionMapping)
                                 {
+                                    uint txsMappingCount = 0;
                                     foreach (var txId in block.transactions)
                                     {
                                         if (txId[0] == 0) // ignore staking rewards
@@ -465,10 +468,11 @@ namespace LP.Meta
 
                                         if (!transactionMapping.ContainsKey(txId))
                                         {
-                                            Console.WriteLine("Adding transaction mapping block {0} tx id {1}", block.blockNum, Transaction.txIdV8ToLegacy(txId));
                                             transactionMapping.Add(txId, block.blockNum);
+                                            txsMappingCount++;
                                         }
                                     }
+Console.WriteLine("Adding {0} transaction mappings for block {1}", txsMappingCount, block.blockNum);
                                 }
                                 currentRequest.endpoint = broadcastGetBlock(block.blockNum, null, endpoint, 1, false);
                             }
@@ -487,6 +491,14 @@ namespace LP.Meta
                 if (networkBlockHeight == 0)
                 {
                     networkBlockHeight = block_num;
+
+                    requestsQueue.Add(networkBlockHeight - 1, new RequestData()
+                    {
+                        timeStamp = DateTime.Now,
+                        blockNum = networkBlockHeight - 1,
+                        endpoint = endpoint
+                    });
+
                     return;
                 }
 
@@ -617,8 +629,14 @@ namespace LP.Meta
 
                 if (!blockRepository.ContainsKey(blk.blockNum))
                 {
-                    blk.transactions.Clear(); // clear transaction data, is not needed anymore
-                    blockRepository.Add(blk.blockNum, blk);
+                    blockRepository.Add(blk.blockNum, new PoolBlock
+                    {
+                        blockNum = blk.blockNum,
+                        version = blk.version,
+                        difficulty = blk.difficulty,
+                        blockChecksum = blk.blockChecksum
+                    });
+
                     lock (activePoolBlockLock)
                     {
                         lock (knownSolvedBlocks)
@@ -634,11 +652,7 @@ Console.WriteLine("Currently mined block has a higher difficulty than the last r
 
                 lock (transactionMapping)
                 {
-                    var toRemove = transactionMapping.Where(tm => tm.Value == currentRequest.blockNum).ToList();
-                    foreach (var tm in toRemove)
-                    {
-                        transactionMapping.Remove(tm.Key);
-                    }
+                    transactionMapping.Clear();
                 }
 
                 currentRequest = null;
@@ -680,7 +694,7 @@ Console.WriteLine("Block that was currently mined has already been resolved by s
                 }
             }
 
-            while (blockRepository.Count >= (long)ConsensusConfig.getRedactedWindowSize())
+            while (blockRepository.Count >= ((long)ConsensusConfig.getRedactedWindowSize() - 110))
             {
                 ulong toRemove = blockRepository.Keys.Min();
                 lock (activePoolBlockLock)
@@ -698,14 +712,7 @@ Console.WriteLine("Block that was currently mined is too old, resetting active m
 
         public override Block getLastBlock()
         {
-            lock(blockRepository)
-            {
-                if(blockRepository.Count > 0)
-                {
-                    return blockRepository[blockRepository.Keys.Max()];
-                }
-            }
-            return null;
+            return null; // this will prevent clients to connect to us
         }
 
         public override Wallet getWallet(byte[] id)
@@ -838,7 +845,29 @@ Console.WriteLine("Block that was currently mined is too old, resetting active m
                 }
             }
         }
-        
+
+        public void handleBlockHeight(byte[] data, RemoteEndpoint endpoint)
+        {
+            using (MemoryStream m = new MemoryStream(data))
+            {
+                using (BinaryReader reader = new BinaryReader(m))
+                {
+                    ulong blockNum = reader.ReadUInt64();
+
+                    if (blockNum > endpoint.blockHeight)
+                    {
+                        endpoint.blockHeight = blockNum;
+                    }
+                }
+
+            }
+
+            if (networkBlockHeight < endpoint.blockHeight)
+            {
+                processNewBlockHeight(endpoint.blockHeight, endpoint);
+            }
+        }
+
         [ThreadStatic] private static byte[] dummyExpandedNonce = null;
         [ThreadStatic] private static int lastNonceLength = 0;
         private static byte[] expandNonce(byte[] nonce, int expand_length)
@@ -920,14 +949,14 @@ Console.WriteLine("Block that was currently mined is too old, resetting active m
             return hash_ceil;
         }
 
-        public Block getBlock(ulong blocknum)
+        public PoolBlock getBlock(ulong blocknum)
         {
-            Block requested = null;
+            PoolBlock requested = null;
             lock (blockRepository)
             {
                 if (blockRepository.ContainsKey(blocknum))
                 {
-                    requested = new Block(blockRepository[blocknum]);
+                    requested = blockRepository[blocknum];
                 }
             }
 
@@ -957,7 +986,7 @@ Console.WriteLine("Block that was currently mined is too old, resetting active m
                 return false;
             }
 
-            Block block = getBlock(blocknum);
+            PoolBlock block = getBlock(blocknum);
             if (block == null)
                 return false;
 
@@ -1022,7 +1051,7 @@ Console.WriteLine("Block that was currently mined is too old, resetting active m
             }
         }
 
-        public Block getMiningBlock()
+        public PoolBlock getMiningBlock()
         {            
             lock (activePoolBlockLock)
             {

@@ -201,7 +201,7 @@ namespace LP.Network
             }
 
             ulong blocknum = ulong.Parse((string)parameters["blocknum"]);
-            Block block = node.getBlock(blocknum);
+            PoolBlock block = node.getBlock(blocknum);
             if (block == null)
             {
                 Logging.info("Received incorrect verify block number from miner.");
@@ -251,7 +251,7 @@ namespace LP.Network
             }
 
             ulong blocknum = ulong.Parse((string)parameters["blocknum"]);
-            Block block = node.getBlock(blocknum);
+            PoolBlock block = node.getBlock(blocknum);
             if (block == null)
             {
                 Logging.info("Received incorrect block number from miner.");
@@ -285,7 +285,7 @@ namespace LP.Network
         // Returns an empty PoW block based on the search algorithm provided as a parameter
         private JsonResponse onGetMiningBlock(Dictionary<string, object> parameters)
         {
-            Block block = node.getMiningBlock();
+            PoolBlock block = node.getMiningBlock();
             if (block == null)
             {
                 return new JsonResponse
