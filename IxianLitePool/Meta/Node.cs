@@ -145,6 +145,7 @@ namespace LP.Meta
                         {
                             Console.WriteLine("Request for block {0} timed out, requesting {1} again.", currentRequest.blockNum, currentRequest.block != null ? "transactions" : "block");
                             currentRequest.timeStamp = DateTime.Now;
+                            currentRequest.retryCount++;    
                             currentRequest.endpoint = broadcastGetBlock(currentRequest.blockNum, currentRequest.endpoint, null, (currentRequest.block != null ? 1 : 0), currentRequest.block == null);
                         }
                         else // reset request completely and try again
@@ -170,6 +171,7 @@ namespace LP.Meta
                                 currentRequest.block = null;
                                 currentRequest.transactions.Clear();
                                 currentRequest.timeStamp = DateTime.Now;
+                                currentRequest.retryCount = 0;
                                 currentRequest.endpoint = broadcastGetBlock(currentRequest.blockNum, null, null, 0, true);
                             }
                         }
