@@ -10,27 +10,16 @@ namespace LP.Meta
 {
     class Config
     {
-        public static string walletFile = "ixian.wal";
         public static readonly string version = "xlp-0.0.1";
 
-        public static int serverPort = 10234;
+        public static string walletFile = "ixian.wal";
+        public static string walletPassword = "";
 
+        public static int poolPort = 8080;
         public static int apiPort = 8081;
 
-        public static Dictionary<string, string> apiUsers = new Dictionary<string, string>();
-        public static List<string> apiAllowedIps = new List<string>();
-        public static List<string> apiBinds = new List<string>();
-
-        public static int maxLogSize = 50; // MB
-        public static int maxLogCount = 10;
-
-        public static int logVerbosity = (int) LogSeverity.info + (int) LogSeverity.warn + (int) LogSeverity.error;
-
-        public static string externalIp = "";
-
-        public static int maxOutgoingConnections = 12;
-
-        public static string configFilename = "ixian.cfg";
+        public static ulong startingDifficulty = 10000;
+        public static int targetSharesPerSecond = 10;
 
         private Config()
         {
@@ -42,50 +31,30 @@ namespace LP.Meta
             Console.WriteLine("Starts a new instance of Ixian Lite Pool");
             Console.WriteLine("");
             Console.WriteLine(
-                " IxianLitePool.exe [-h] [-v] [-p 10234] [-a 8081] [-i ip] [-w ixian.wal] [-n seed1.ixian.io:10234]");
-            Console.WriteLine(
-                "   [--config ixian.cfg] [--maxLogSize 50] [--maxLogCount 10] [--logVerbosity 14] [--walletPassword]");
-            Console.WriteLine("   [--maxOutgoingConnections]");
+                " IxianLitePool.exe [--api 8081] [--pool 8080] [--wallet ixian.wal] [--password password]");
             Console.WriteLine("");
             Console.WriteLine("    -h\t\t\t Displays this help");
             Console.WriteLine("    -v\t\t\t Displays version");
-            Console.WriteLine("    -p\t\t\t Port to listen on");
-            Console.WriteLine("    -a\t\t\t HTTP/API port to listen on");
-            Console.WriteLine("    -i\t\t\t External IP Address to use");
-            Console.WriteLine("    -w\t\t\t Specify location of the ixian.wal file");
-            Console.WriteLine("    -n\t\t\t Specify which seed node to use");
-            Console.WriteLine("    --config\t\t Specify config filename (default ixian.cfg)");
-            Console.WriteLine("    --maxLogSize\t Specify maximum log file size in MB");
-            Console.WriteLine("    --maxLogCount\t Specify maximum number of log files");
-            Console.WriteLine(
-                "    --logVerbosity\t Sets log verbosity (0 = none, trace = 1, info = 2, warn = 4, error = 8)");
-            Console.WriteLine("    --walletPassword\t Specify the password for the wallet (be careful with this)");
-            Console.WriteLine("    --verboseOutput\t Starts node with verbose output.");
-            Console.WriteLine("    --maxOutgoingConnections\t Max outgoing connections.");
+            Console.WriteLine("    --api\t\t API port to listen on - used by mining software");
+            Console.WriteLine("    --pool\t\t HTTP port to listen on - this will server pool website files");
+            Console.WriteLine("    --wallet\t\t Specify location of the ixian.wal file");
+            Console.WriteLine("    --password\t\t Specify the password for the wallet (be careful with this)");
+            Console.WriteLine("    --difficulty\t\t Specify the starting difficulty for the pool");
+            Console.WriteLine("    --sharesPerSec\t\t Specify the target shares per second accepted by the pool");
             Console.WriteLine("----------- Config File Options -----------");
             Console.WriteLine(" Config file options should use parameterName = parameterValue syntax.");
+            Console.WriteLine(" Config file options are stored in ixan.cfg file.");
             Console.WriteLine(" Each option should be specified in its own line. Example:");
-            Console.WriteLine("    dltPort = 10234");
-            Console.WriteLine("    apiPort = 8081");
+            Console.WriteLine("    api = 8081");
+            Console.WriteLine("    pool = 8080");
             Console.WriteLine("");
-            Console.WriteLine(" Available options:");
-            Console.WriteLine("    dltPort\t\t Port to listen on (same as -p CLI)");
-            Console.WriteLine("    apiPort\t\t HTTP/API port to listen on (same as -a CLI)");
-            Console.WriteLine(
-                "    apiAllowIp\t\t Allow API connections from specified source or sources (can be used multiple times)");
-            Console.WriteLine(
-                "    apiBind\t\t Bind to given address to listen for API connections (can be used multiple times)");
-            Console.WriteLine(
-                "    addApiUser\t\t Adds user:password that can access the API (can be used multiple times)");
-
-            Console.WriteLine("    externalIp\t\t External IP Address to use (same as -i CLI)");
-            Console.WriteLine(
-                "    addPeer\t\t Specify which seed node to use (same as -n CLI) (can be used multiple times)");
-            Console.WriteLine("    maxLogSize\t\t Specify maximum log file size in MB (same as --maxLogSize CLI)");
-            Console.WriteLine("    maxLogCount\t\t Specify maximum number of log files (same as --maxLogCount CLI)");
-            Console.WriteLine("    logVerbosity\t Sets log verbosity (same as --logVerbosity CLI)");
+            Console.WriteLine(" Same options are available for config file as for command line arguments");
 
             return "";
+        }
+
+        private static void outputVersion()
+        {
         }
 
         private static void readConfigFile(string filename)
@@ -116,40 +85,23 @@ namespace LP.Meta
                 Logging.info("Processing config parameter '" + key + "' = '" + value + "'");
                 switch (key)
                 {
-                    case "dltPort":
-                        serverPort = int.Parse(value);
-                        break;
-                    case "apiPort":
+                    case "api":
                         apiPort = int.Parse(value);
                         break;
-                    case "apiAllowIp":
-                        apiAllowedIps.Add(value);
+                    case "pool":
+                        poolPort = int.Parse(value);
                         break;
-                    case "apiBind":
-                        apiBinds.Add(value);
+                    case "wallet":
+                        walletFile = value;
                         break;
-                    case "addApiUser":
-                        string[] credential = value.Split(':');
-                        if (credential.Length == 2)
-                        {
-                            apiUsers.Add(credential[0], credential[1]);
-                        }
-
+                    case "password":
+                        walletPassword = value;
                         break;
-                    case "externalIp":
-                        externalIp = value;
+                    case "difficulty":
+                        startingDifficulty = ulong.Parse(value);
                         break;
-                    case "addPeer":
-                        CoreNetworkUtils.seedNodes.Add(new string[2] {value, null});
-                        break;
-                    case "maxLogSize":
-                        maxLogSize = int.Parse(value);
-                        break;
-                    case "maxLogCount":
-                        maxLogCount = int.Parse(value);
-                        break;
-                    case "logVerbosity":
-                        logVerbosity = int.Parse(value);
+                    case "sharesPerSec":
+                        targetSharesPerSecond = int.Parse(value);
                         break;
                     default:
                         // unknown key
@@ -159,67 +111,41 @@ namespace LP.Meta
             }
         }
 
-        public static void init(string[] args)
+        public static bool init(string[] args)
         {
-            // first pass
+            bool continueProcessing = true;
+
+            readConfigFile("ixian.cfg");
+
             var cmd_parser = new FluentCommandLineParser();
 
             // help
-            cmd_parser.SetupHelp("h", "help").Callback(text => outputHelp());
-
-            // config file
-            cmd_parser.Setup<string>("config").Callback(value => configFilename = value).Required();
-
-            cmd_parser.Parse(args);
-
-            readConfigFile(configFilename);
-
-            processCliParmeters(args);
-            Logging.verbosity = logVerbosity;
-        }
-
-        private static void processCliParmeters(string[] args)
-        {
-            // second pass
-            var cmd_parser = new FluentCommandLineParser();
-
-            string seedNode = "";
+            cmd_parser.SetupHelp("h", "help").Callback(text => { outputHelp(); continueProcessing = false; });
 
             // version
-            cmd_parser.Setup<bool>('v', "version").Callback(text => outputVersion());
+            cmd_parser.Setup<bool>('v', "version").Callback(text => { outputVersion(); continueProcessing = false; });
 
-            cmd_parser.Setup<int>('p', "port").Callback(value => Config.serverPort = value).Required();
+            // api port
+            cmd_parser.Setup<int>("api").Callback(value => apiPort = value);
 
-            cmd_parser.Setup<int>('a', "apiport").Callback(value => apiPort = value).Required();
+            // pool port
+            cmd_parser.Setup<int>("pool").Callback(value => poolPort = value);
 
-            cmd_parser.Setup<string>('i', "ip").Callback(value => externalIp = value).Required();
+            // wallet
+            cmd_parser.Setup<string>("wallet").Callback(value => walletFile = value);
 
-            cmd_parser.Setup<string>('w', "wallet").Callback(value => walletFile = value).Required();
+            // password
+            cmd_parser.Setup<string>("password").Callback(value => walletPassword = value);
 
-            cmd_parser.Setup<string>('n', "node").Callback(value => seedNode = value).Required();
+            // starting difficulty
+            cmd_parser.Setup<long>("difficulty").Callback(value => startingDifficulty = (ulong)value);
 
-            cmd_parser.Setup<int>("maxLogSize").Callback(value => maxLogSize = value).Required();
-
-            cmd_parser.Setup<int>("maxLogCount").Callback(value => maxLogCount = value).Required();
-
-            cmd_parser.Setup<int>("logVerbosity").Callback(value => logVerbosity = value).Required();
-
-            cmd_parser.Setup<int>("maxOutgoingConnections").Callback(value => maxOutgoingConnections = value);
+            // target shares per second
+            cmd_parser.Setup<int>("sharesPerSec").Callback(value => targetSharesPerSecond = value);
 
             cmd_parser.Parse(args);
 
-            if (seedNode != "")
-            {
-                CoreNetworkUtils.seedNodes = new List<string[]>
-                {
-                    new string[2] {seedNode, null}
-                };
-            }
-        }
-
-        private static void outputVersion()
-        {
-            Console.WriteLine("version");
+            return continueProcessing;
         }
     }
 }

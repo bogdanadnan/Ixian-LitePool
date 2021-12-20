@@ -10,6 +10,8 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
 using IXICore.Inventory;
+using LP.Pool;
+using static LP.DB.PoolDB;
 
 namespace LP.Meta
 {
@@ -32,37 +34,46 @@ namespace LP.Meta
         public List<Transaction> transactions = new List<Transaction>();
     }
 
-    public class PoolBlock
+    public class RepositoryBlock
     {
         public ulong blockNum;
         public int version;
         public ulong difficulty;
         public byte[] blockChecksum;
+        public DateTime timeStamp;
+    }
+
+    public class BlockSolver
+    {
+        public ulong blockNum;
+        public string solverAddress;
+        public string txId;
+        public decimal reward;
     }
 
     public class Node : IxianNode
     {
-        private static uint blockRequestTimeout = 30;
-        private static uint maxRetryCount = 10;
+        private const uint blockRequestTimeout = 30;
+        private const uint maxRetryCount = 10;
+        private const uint activeBlockExpirationInMinutes = 10;
+        private static long maxBlocksInMemory = (long)ConsensusConfig.getRedactedWindowSize() - 110;
+
         private Thread updater = null;
         private bool updaterRunning = false;
         private ulong networkBlockHeight = 0;
 
         private Dictionary<byte[], ulong> transactionMapping = new Dictionary<byte[], ulong>(new ByteArrayComparer());
-        private Dictionary<ulong, PoolBlock> blockRepository = new Dictionary<ulong, PoolBlock>();
+        private Dictionary<ulong, RepositoryBlock> blockRepository = new Dictionary<ulong, RepositoryBlock>();
 
         private Dictionary<ulong, RequestData> requestsQueue = new Dictionary<ulong, RequestData>();
         private object currentRequestLock = new object();
         private RequestData currentRequest = null;
 
-        private Dictionary<ulong, List<Transaction>> knownSolvedBlocks = new Dictionary<ulong, List<Transaction>>();
-
-        private object activePoolBlockLock = new object();
-        private PoolBlock activePoolBlock = null;
+        private Dictionary<ulong, List<BlockSolver>> knownSolvedBlocks = new Dictionary<ulong, List<BlockSolver>>();
 
         public static bool running = false;
 
-        public static Balance balance = new Balance();      // Stores the last known balance for this node
+        public Balance balance = new Balance();      // Stores the last known balance for this node
 
         internal static TransactionInclusion tiv = null;
 
@@ -108,6 +119,15 @@ namespace LP.Meta
             {
                 Thread.Sleep(500);
 
+                ActivePoolBlock activePoolBlock = Pool.Pool.Instance.getActiveBlock();
+                if (activePoolBlock != null &&
+                    (DateTime.Now - (activePoolBlock.miningStart.HasValue ? activePoolBlock.miningStart.Value : DateTime.Now)).Minutes > activeBlockExpirationInMinutes)
+                {
+                    Console.WriteLine("Active mining block {0} timed out without resolution, resetting.", activePoolBlock.blockNum);
+                    Pool.Pool.Instance.resetActiveBlock(MiningBlockResolution.TimedOut);
+                    APIServer.Instance.resetCache();
+                }
+
                 lock (currentRequestLock)
                 {
                     if (currentRequest == null)
@@ -119,25 +139,35 @@ namespace LP.Meta
                                 currentRequest = requestsQueue[requestsQueue.Keys.Min()];
                                 requestsQueue.Remove(requestsQueue.Keys.Min());
                                 currentRequest.timeStamp = DateTime.Now;
-                                Console.WriteLine("Requesting block {0}", currentRequest.blockNum);
+                                Console.WriteLine("Requesting block {0} from network", currentRequest.blockNum);
                                 currentRequest.endpoint = broadcastGetBlock(currentRequest.blockNum, null, (currentRequest.endpoint != null && currentRequest.endpoint.isConnected()) ? currentRequest.endpoint : null, 0, true);
                             }
                         }
                     }
+
                     if (currentRequest == null) // no new requests in requests queue, get an older block
                     {
                         lock (blockRepository)
                         {
-                            if (blockRepository.Count > 0 && blockRepository.Count < (long)ConsensusConfig.getRedactedWindowSize() - 110) // pow transactions are not accepted for first 100 blocks in redacted window + adding additional 10 for safety
+                            if (blockRepository.Count > 0 && blockRepository.Count < maxBlocksInMemory)
                             {
                                 ulong lowestBlockNum = blockRepository.Keys.Min() - 1;
-                                currentRequest = new RequestData
+                                if (BlockStorage.Instance.hasBlockInStorage(lowestBlockNum))
                                 {
-                                    blockNum = lowestBlockNum
-                                };
-                                currentRequest.timeStamp = DateTime.Now;
-                                Console.WriteLine("Requesting block {0}", currentRequest.blockNum);
-                                currentRequest.endpoint = broadcastGetBlock(currentRequest.blockNum, null, null, 0, true);
+                                    Console.WriteLine("Requesting block {0} from storage", lowestBlockNum);
+                                    addBlockFromStorage(lowestBlockNum);
+                                    continue;
+                                }
+                                else
+                                {
+                                    currentRequest = new RequestData
+                                    {
+                                        blockNum = lowestBlockNum
+                                    };
+                                    currentRequest.timeStamp = DateTime.Now;
+                                    Console.WriteLine("Requesting block {0} from network", currentRequest.blockNum);
+                                    currentRequest.endpoint = broadcastGetBlock(currentRequest.blockNum, null, null, 0, true);
+                                }
                             }
                         }
                     }
@@ -153,12 +183,12 @@ namespace LP.Meta
                         {
                             Console.WriteLine("Request for block {0} timed out, requesting {1} again.", currentRequest.blockNum, currentRequest.block != null ? "transactions" : "block");
                             currentRequest.timeStamp = DateTime.Now;
-                            currentRequest.retryCount++;    
+                            currentRequest.retryCount++;
                             currentRequest.endpoint = broadcastGetBlock(currentRequest.blockNum, currentRequest.endpoint, null, (currentRequest.block != null ? 1 : 0), currentRequest.block == null);
                         }
                         else // reset request completely and try again
                         {
-                            if (currentRequest.block == null) // no request containing the block has been received, there is no point in trying again
+                            if (currentRequest.block == null || (blockRepository.Count > 0 && currentRequest.blockNum < blockRepository.Keys.Min())) // no request containing the block has been received, or this is a backward loading block, there is no point in trying again
                             {
                                 Console.WriteLine("Request for block {0} exceeded max retries with no data received, bailing out.", currentRequest.blockNum);
                                 currentRequest = null;
@@ -195,7 +225,7 @@ namespace LP.Meta
                 ConsoleHelpers.displayBackupText();
 
                 // Request a password
-                string password = "";
+                string password = Config.walletPassword;
                 while (password.Length < 10)
                 {
                     Logging.flush();
@@ -216,7 +246,7 @@ namespace LP.Meta
                 while (!success)
                 {
 
-                    string password = "";
+                    string password = Config.walletPassword;
                     if (password.Length < 10)
                     {
                         Logging.flush();
@@ -303,7 +333,7 @@ namespace LP.Meta
             }
         }
 
-        static public void getBalance()
+        public Balance getBalance()
         {
             ProtocolMessage.setWaitFor(ProtocolMessageCode.balance2);
 
@@ -318,16 +348,18 @@ namespace LP.Meta
                 }
             }
             ProtocolMessage.wait(30);
+
+            return balance;
         }
 
-        static public void sendTransaction(string address, IxiNumber amount)
+        public string sendTransaction(string address, IxiNumber amount)
         {
-            Node.getBalance();
+            var balance = getBalance();
 
-            if (Node.balance.balance < amount)
+            if (balance.balance < amount)
             {
-                Console.WriteLine("Insufficient funds.\n");
-                return;
+                Console.WriteLine("Insufficient funds to send {0} IXI to address {1}.\n", amount.ToString(), address);
+                return String.Empty;
             }
 
             SortedDictionary<byte[], IxiNumber> to_list = new SortedDictionary<byte[], IxiNumber>(new ByteArrayComparer());
@@ -337,14 +369,19 @@ namespace LP.Meta
             byte[] pubKey = IxianHandler.getWalletStorage().getPrimaryPublicKey();
             to_list.AddOrReplace(Base58Check.Base58CheckEncoding.DecodePlain(address), amount);
             Transaction transaction = new Transaction((int)Transaction.Type.Normal, fee, to_list, from, null, pubKey, IxianHandler.getHighestKnownNetworkBlockHeight());
+
+            string txId = Transaction.txIdV8ToLegacy(transaction.id);
             if (IxianHandler.addTransaction(transaction, true))
             {
-                Console.WriteLine("Sending transaction, txid: {0}\n", Transaction.txIdV8ToLegacy(transaction.id));
+                Console.WriteLine("Sending transaction txId: {0}\n", txId);
+
+                return txId;
             } else
             {
-                Console.WriteLine("Could not send transaction\n");
-            }
+                Console.WriteLine("Could not send transaction txId: {0}\n", txId);
 
+                return String.Empty;
+            }
         }
 
         public void setNetworkBlock(ulong block_height, RemoteEndpoint endpoint)
@@ -472,7 +509,7 @@ namespace LP.Meta
                                             txsMappingCount++;
                                         }
                                     }
-Console.WriteLine("Adding {0} transaction mappings for block {1}", txsMappingCount, block.blockNum);
+                                    Console.WriteLine("Adding {0} transaction mappings for block {1}", txsMappingCount, block.blockNum);
                                 }
                                 currentRequest.endpoint = broadcastGetBlock(block.blockNum, null, endpoint, 1, false);
                             }
@@ -600,7 +637,7 @@ Console.WriteLine("Adding {0} transaction mappings for block {1}", txsMappingCou
                     }
                 }
 
-                if(txsForCurrentRequest)
+                if (txsForCurrentRequest)
                 {
                     currentRequest.timeStamp = DateTime.Now;
                 }
@@ -620,34 +657,110 @@ Console.WriteLine("Adding {0} transaction mappings for block {1}", txsMappingCou
             }
         }
 
+        private void addBlockFromStorage(ulong blkNum)
+        {
+            RepositoryBlock blk = BlockStorage.Instance.getBlock(blkNum);
+            if (blk != null)
+            {
+                List<BlockSolver> solvers = BlockStorage.Instance.getBlockSolversFromBlock(blkNum);
+
+                lock (blockRepository)
+                {
+                    if (!blockRepository.ContainsKey(blk.blockNum))
+                    {
+                        blockRepository.Add(blk.blockNum, blk);
+                    }
+
+                    foreach (var solver in solvers)
+                    {
+                        ulong minedBlockNum = solver.blockNum;
+
+                        Console.WriteLine("Found POW transaction, adding block {0} - miner {1} to known solved blocks list", minedBlockNum, solver.solverAddress);
+
+                        lock (knownSolvedBlocks)
+                        {
+                            if (knownSolvedBlocks.ContainsKey(minedBlockNum))
+                            {
+                                knownSolvedBlocks[minedBlockNum].Add(solver);
+                            }
+                            else
+                            {
+                                knownSolvedBlocks.Add(minedBlockNum, new List<BlockSolver>() { solver });
+                            }
+                        }
+
+                        ActivePoolBlock activePoolBlock = Pool.Pool.Instance.getActiveBlock();
+                        if (activePoolBlock != null && activePoolBlock.blockNum == minedBlockNum)
+                        {
+                            if (solver.solverAddress == (new Address(IxianHandler.getWalletStorage().getPrimaryAddress())).ToString())
+                            {
+                                Console.WriteLine("Block that was currently mined has already been resolved by this pool, resetting active mining block");
+                                Pool.Pool.Instance.resetActiveBlock(MiningBlockResolution.SolvedByPool);
+                            }
+                            else
+                            {
+                                Console.WriteLine("Block that was currently mined has already been resolved by someone else, resetting active mining block");
+                                Pool.Pool.Instance.resetActiveBlock(MiningBlockResolution.SolveByOther);
+                            }
+                            APIServer.Instance.resetCache();
+                        }
+                    }
+
+                    while (blockRepository.Count > maxBlocksInMemory)
+                    {
+                        ulong toRemove = blockRepository.Keys.Min();
+
+                        ActivePoolBlock activePoolBlock = Pool.Pool.Instance.getActiveBlock();
+                        if (activePoolBlock != null && activePoolBlock.blockNum == toRemove)
+                        {
+                            Console.WriteLine("Block that was currently mined is older than allowed, resetting active mining block");
+                            Pool.Pool.Instance.resetActiveBlock(MiningBlockResolution.EvictedFromRedactedWindow);
+                            APIServer.Instance.resetCache();
+                        }
+
+                        blockRepository.Remove(toRemove);
+                    }
+                }
+            }
+        }
+
         private void finalizeRequest()
         {
+            string localAddress = (new Address(IxianHandler.getWalletStorage().getPrimaryAddress())).ToString();
             lock (blockRepository)
             {
                 Block blk = currentRequest.block;
                 List<Transaction> txs = currentRequest.transactions.Where(tx => tx.type == (int)Transaction.Type.PoWSolution).ToList();
 
+                bool forwardBlock = false;
+
                 if (!blockRepository.ContainsKey(blk.blockNum))
                 {
-                    blockRepository.Add(blk.blockNum, new PoolBlock
+                    if(blockRepository.Keys.Max() < blk.blockNum)
+                    {
+                        forwardBlock = true;
+                    }
+
+                    blockRepository.Add(blk.blockNum, new RepositoryBlock
                     {
                         blockNum = blk.blockNum,
                         version = blk.version,
                         difficulty = blk.difficulty,
-                        blockChecksum = blk.blockChecksum
+                        blockChecksum = blk.blockChecksum,
+                        timeStamp = DateTimeOffset.FromUnixTimeSeconds(blk.timestamp).DateTime
                     });
+                }
 
-                    lock (activePoolBlockLock)
+                if (!BlockStorage.Instance.hasBlockInStorage(blk.blockNum))
+                {
+                    BlockStorage.Instance.addBlock(new RepositoryBlock
                     {
-                        lock (knownSolvedBlocks)
-                        {
-                            if (activePoolBlock != null && activePoolBlock.difficulty > blk.difficulty && !knownSolvedBlocks.ContainsKey(blk.blockNum))
-                            {
-Console.WriteLine("Currently mined block has a higher difficulty than the last received one, switching to new block.");
-                                activePoolBlock = null;
-                            }
-                        }
-                    }
+                        blockNum = blk.blockNum,
+                        version = blk.version,
+                        difficulty = blk.difficulty,
+                        blockChecksum = blk.blockChecksum,
+                        timeStamp = DateTimeOffset.FromUnixTimeSeconds(blk.timestamp).DateTime
+                    });
                 }
 
                 lock (transactionMapping)
@@ -669,45 +782,78 @@ Console.WriteLine("Currently mined block has a higher difficulty than the last r
                         }
                     }
 
-Console.WriteLine("Found POW transaction, adding block {0} - miner {1} to known solved blocks list", minedBlockNum, (new Address(tx.pubKey)).ToString());
+                    Console.WriteLine("Found POW transaction, adding block {0} - miner {1} to known solved blocks list", minedBlockNum, (new Address(tx.pubKey)).ToString());
 
                     lock (knownSolvedBlocks)
                     {
+                        IxiNumber pow_reward_ixi = ConsensusConfig.calculateMiningRewardForBlock(minedBlockNum);
+                        decimal pow_reward = (decimal)pow_reward_ixi.getAmount();
+                        pow_reward /= 100000000;
+
                         if (knownSolvedBlocks.ContainsKey(minedBlockNum))
                         {
-                            knownSolvedBlocks[minedBlockNum].Add(tx);
+                            knownSolvedBlocks[minedBlockNum].Add(new BlockSolver
+                            {
+                                blockNum = minedBlockNum,
+                                solverAddress = (new Address(tx.pubKey)).ToString(),
+                                txId = Transaction.txIdV8ToLegacy(tx.id)
+                            });
+
+                            decimal powRewardPart = pow_reward / knownSolvedBlocks[minedBlockNum].Count;
+                            knownSolvedBlocks[minedBlockNum].ForEach(sb => sb.reward = powRewardPart);
                         }
                         else
                         {
-                            knownSolvedBlocks.Add(minedBlockNum, new List<Transaction>() { tx });
+                            knownSolvedBlocks.Add(minedBlockNum, new List<BlockSolver>() { new BlockSolver
+                                {
+                                    blockNum = minedBlockNum,
+                                    solverAddress = (new Address(tx.pubKey)).ToString(),
+                                    txId = Transaction.txIdV8ToLegacy(tx.id),
+                                    reward = pow_reward
+                                }
+                            });
+                        }
+
+                        BlockStorage.Instance.updateBlockSolvers(blk.blockNum, minedBlockNum, knownSolvedBlocks[minedBlockNum]);
+
+                        if (forwardBlock && knownSolvedBlocks[minedBlockNum].Any(bs => bs.solverAddress == localAddress))
+                        {
+                            Payment.Instance.updatePendingPayments();
                         }
                     }
 
-                    lock (activePoolBlockLock)
+                    ActivePoolBlock activePoolBlock = Pool.Pool.Instance.getActiveBlock();
+                    if (activePoolBlock != null && activePoolBlock.blockNum == minedBlockNum)
                     {
-                        if (activePoolBlock != null && activePoolBlock.blockNum == minedBlockNum)
+                        if ((new Address(tx.pubKey)).ToString() == localAddress)
                         {
-Console.WriteLine("Block that was currently mined has already been resolved by someone else, resetting active mining block");
-                            activePoolBlock = null;
+                            Console.WriteLine("Block that was currently mined has already been resolved by this pool, resetting active mining block");
+                            Pool.Pool.Instance.resetActiveBlock(MiningBlockResolution.SolvedByPool);
                         }
+                        else
+                        {
+                            Console.WriteLine("Block that was currently mined has already been resolved by someone else, resetting active mining block");
+                            Pool.Pool.Instance.resetActiveBlock(MiningBlockResolution.SolveByOther);
+                        }
+                        APIServer.Instance.resetCache();
                     }
                 }
             }
 
-            while (blockRepository.Count >= ((long)ConsensusConfig.getRedactedWindowSize() - 110))
+            while (blockRepository.Count > maxBlocksInMemory)
             {
                 ulong toRemove = blockRepository.Keys.Min();
-                lock (activePoolBlockLock)
+
+                ActivePoolBlock activePoolBlock = Pool.Pool.Instance.getActiveBlock();
+                if (activePoolBlock != null && activePoolBlock.blockNum == toRemove)
                 {
-                    if (activePoolBlock != null && activePoolBlock.blockNum == toRemove)
-                    {
-Console.WriteLine("Block that was currently mined is too old, resetting active mining block");
-                        activePoolBlock = null;
-                    }
+                    Console.WriteLine("Block that was currently mined is older than allowed, resetting active mining block");
+                    Pool.Pool.Instance.resetActiveBlock(MiningBlockResolution.EvictedFromRedactedWindow);
+                    APIServer.Instance.resetCache();
                 }
+
                 blockRepository.Remove(toRemove);
             }
-
         }
 
         public override Block getLastBlock()
@@ -949,9 +1095,9 @@ Console.WriteLine("Block that was currently mined is too old, resetting active m
             return hash_ceil;
         }
 
-        public PoolBlock getBlock(ulong blocknum)
+        public RepositoryBlock getBlock(ulong blocknum)
         {
-            PoolBlock requested = null;
+            RepositoryBlock requested = null;
             lock (blockRepository)
             {
                 if (blockRepository.ContainsKey(blocknum))
@@ -986,7 +1132,7 @@ Console.WriteLine("Block that was currently mined is too old, resetting active m
                 return false;
             }
 
-            PoolBlock block = getBlock(blocknum);
+            RepositoryBlock block = getBlock(blocknum);
             if (block == null)
                 return false;
 
@@ -999,6 +1145,7 @@ Console.WriteLine("Block that was currently mined is too old, resetting active m
             byte[] fullnonce = expandNonce(nonce_bytes, 234236);
             byte[] hash = findHash_v2(p1, fullnonce);
 
+            byte[] hashCeil = getHashCeilFromDifficulty(difficulty);
             if (validateHash_v2(hash, getHashCeilFromDifficulty(difficulty)) == true)
             {
                 // Hash is valid
@@ -1025,15 +1172,14 @@ Console.WriteLine("Block that was currently mined is too old, resetting active m
                 }
             }
 
-            lock (activePoolBlockLock)
+            var activePoolBlock = Pool.Pool.Instance.getActiveBlock();
+            lock (knownSolvedBlocks)
             {
-                lock (knownSolvedBlocks)
-                {
-                    knownSolvedBlocks.Add(activePoolBlock.blockNum, new List<Transaction>());
-                }
-
-                activePoolBlock = null;
+                knownSolvedBlocks.Add(activePoolBlock.blockNum, new List<BlockSolver>());
             }
+
+            Pool.Pool.Instance.resetActiveBlock(MiningBlockResolution.SolvedByPool);
+            APIServer.Instance.resetCache();
 
             Transaction transaction = new Transaction((int) Transaction.Type.PoWSolution, new IxiNumber(0),
                 new IxiNumber(0), ConsensusConfig.ixianInfiniMineAddress, from, data, pubkey,
@@ -1051,16 +1197,19 @@ Console.WriteLine("Block that was currently mined is too old, resetting active m
             }
         }
 
-        public PoolBlock getMiningBlock()
-        {            
-            lock (activePoolBlockLock)
+        public RepositoryBlock getMiningBlock()
+        {
+            var activePoolBlock = Pool.Pool.Instance.getActiveBlock();
+            if (activePoolBlock == null)
             {
-                if (activePoolBlock == null)
+                var activePoolBlockCandidates = blockRepository.Where(x => !knownSolvedBlocks.ContainsKey(x.Key)).Select(x => x.Value).OrderBy(x => x.difficulty);
+                if (activePoolBlockCandidates.Count() > 0)
                 {
-                    activePoolBlock = blockRepository.Where(x => !knownSolvedBlocks.ContainsKey(x.Key)).Select(x => x.Value).OrderBy(x => x.difficulty).FirstOrDefault();
+                    activePoolBlock = new ActivePoolBlock(activePoolBlockCandidates.ElementAt((new Random()).Next(Math.Min(activePoolBlockCandidates.Count(), 200))));
+                    Pool.Pool.Instance.setActiveBlock(activePoolBlock);
                 }
-                return activePoolBlock;
             }
+            return activePoolBlock;
         }
     }
 }

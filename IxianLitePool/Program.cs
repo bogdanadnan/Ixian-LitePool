@@ -6,6 +6,7 @@ using System.Threading;
 using LP.Network;
 using LP.Pool;
 using Microsoft.Owin.Hosting;
+using System.Collections.Generic;
 
 namespace IxianLitePool
 {
@@ -21,36 +22,44 @@ namespace IxianLitePool
 
         static void Main(string[] args)
         {
-            // Clear the console first
-            Console.Clear();
-
             Console.WriteLine("Ixian Lite Pool {0} ({1})", Config.version, CoreConfig.version);
 
-            string domainAddress = "http://localhost/";
+            string domainAddress = String.Format("http://*:{0}/", Config.poolPort);
 
             using (WebApp.Start(url: domainAddress))
             {
-                onStart(args);
+                if(!onStart(args))
+                {
+                    return;
+                }
+
                 mainLoop();
                 onStop();
             }
         }
 
-        static void onStart(string[] args)
+        static bool onStart(string[] args)
         {
             running = true;
 
-            Config.init(args);
-            
-            commands = new Commands();
+            if(!Config.init(args))
+            {
+                return false;
+            }
 
             // Initialize the node
             node = new Node();
 
+            commands = new Commands(node);
+
             // Start the node
             node.start();
 
-            api = new APIServer(node, Config.apiBinds, Config.apiUsers, Config.apiAllowedIps);
+            Payment.Instance.start(node);
+
+            api = new APIServer(node, new List<String>() { String.Format("http://*:{0}/", Config.apiPort) });
+
+            return true;
         }
 
         static void mainLoop()
@@ -69,6 +78,8 @@ namespace IxianLitePool
         static void onStop()
         {
             running = false;
+
+            Payment.Instance.stop();
 
             // Stop the DLT
             node.stop();

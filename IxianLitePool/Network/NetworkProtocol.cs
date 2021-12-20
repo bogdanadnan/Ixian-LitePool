@@ -120,15 +120,15 @@ namespace LP.Network
                                         // Retrieve the blockheight for the balance
                                         ulong block_height = reader.ReadUInt64();
 
-                                        if (block_height > Node.balance.blockHeight && (Node.balance.balance != balance || Node.balance.blockHeight == 0))
+                                        if (block_height > node.balance.blockHeight && (node.balance.balance != balance || node.balance.blockHeight == 0))
                                         {
                                             byte[] block_checksum = reader.ReadBytes(reader.ReadInt32());
 
-                                            Node.balance.address = address;
-                                            Node.balance.balance = balance;
-                                            Node.balance.blockHeight = block_height;
-                                            Node.balance.blockChecksum = block_checksum;
-                                            Node.balance.verified = false;
+                                            node.balance.address = address;
+                                            node.balance.balance = balance;
+                                            node.balance.blockHeight = block_height;
+                                            node.balance.blockChecksum = block_checksum;
+                                            node.balance.verified = false;
                                         }
                                     }
                                 }
@@ -156,15 +156,15 @@ namespace LP.Network
                                         // Retrieve the blockheight for the balance
                                         ulong block_height = reader.ReadIxiVarUInt();
 
-                                        if (block_height > Node.balance.blockHeight && (Node.balance.balance != balance || Node.balance.blockHeight == 0))
+                                        if (block_height > node.balance.blockHeight && (node.balance.balance != balance || node.balance.blockHeight == 0))
                                         {
                                             byte[] block_checksum = reader.ReadBytes((int)reader.ReadIxiVarUInt());
 
-                                            Node.balance.address = address;
-                                            Node.balance.balance = balance;
-                                            Node.balance.blockHeight = block_height;
-                                            Node.balance.blockChecksum = block_checksum;
-                                            Node.balance.verified = false;
+                                            node.balance.address = address;
+                                            node.balance.balance = balance;
+                                            node.balance.blockHeight = block_height;
+                                            node.balance.blockChecksum = block_checksum;
+                                            node.balance.verified = false;
                                         }
                                     }
                                 }

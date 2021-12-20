@@ -21,29 +21,47 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using IXICore.Utils;
+using LP.Pool;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace LP.Network
 {
     class APIServer : GenericAPIServer
     {
         private Node node = null;
+        private MemoryCache cache = new MemoryCache(new MemoryCacheOptions());
+
+        private int shareCount = 0;
+        private DateTime shareCountTimeStamp = DateTime.Now;
+        private bool sharesStarted = false;
+
+        private static APIServer instance = null;
+        public static APIServer Instance
+        {
+            get
+            {
+                return instance;
+            }
+        }
+
         public APIServer(Node node, List<string> listen_URLs, Dictionary<string, string> authorized_users = null, List<string> allowed_IPs = null)
         {
             this.node = node;
+            instance = this;
             
-            Console.WriteLine("Listening on {0} urls {1}", listen_URLs.Count, listen_URLs.Count > 0 ? listen_URLs[0] : "");
             // Start the API server
             start(listen_URLs, authorized_users, allowed_IPs);
+        }
+
+        public void resetCache()
+        {
+            cache.Compact(1.0);
         }
 
         protected override void onUpdate(HttpListenerContext context)
         {
             try
             {
-                if (ConsoleHelpers.verboseConsoleOutput)
-                    Console.Write("*");
-
-
                 string post_data = "";
                 string method_name = "";
                 Dictionary<string, object> method_params = null;
@@ -120,16 +138,6 @@ namespace LP.Network
         {
             JsonResponse response = null;
 
-            if (methodName.Equals("getbalance", StringComparison.OrdinalIgnoreCase))
-            {
-                response = onGetBalance(parameters);
-            }
-
-            if (methodName.Equals("verifyminingsolution", StringComparison.OrdinalIgnoreCase))
-            {
-                response = onVerifyMiningSolution(parameters);
-            }
-
             if (methodName.Equals("submitminingsolution", StringComparison.OrdinalIgnoreCase))
             {
                 response = onSubmitMiningSolution(parameters);
@@ -155,137 +163,86 @@ namespace LP.Network
             return true;
         }
 
-        public JsonResponse onGetBalance(Dictionary<string, object> parameters)
-        {
-            if (!parameters.ContainsKey("address"))
-            {
-                JsonError error = new JsonError { code = (int)RPCErrorCode.RPC_INVALID_PARAMETER, message = "Parameter 'address' is missing" };
-                return new JsonResponse { result = null, error = error };
-            }
-
-            byte[] address = Base58Check.Base58CheckEncoding.DecodePlain((string)parameters["address"]);
-
-            IxiNumber balance = node.getWalletBalance(address);
-
-            return new JsonResponse { result = balance.ToString(), error = null };
-        }
-        
-        // Verifies a mining solution based on the block's difficulty
-        // It does not submit it to the network.
-        private JsonResponse onVerifyMiningSolution(Dictionary<string, object> parameters)
-        {
-            // Check that all the required query parameters are sent
-            if (!parameters.ContainsKey("nonce"))
-            {
-                JsonError error = new JsonError { code = (int)RPCErrorCode.RPC_INVALID_PARAMETER, message = "Parameter 'nonce' is missing" };
-                return new JsonResponse { result = null, error = error };
-            }
-
-            if (!parameters.ContainsKey("blocknum"))
-            {
-                JsonError error = new JsonError { code = (int)RPCErrorCode.RPC_INVALID_PARAMETER, message = "Parameter 'blocknum' is missing" };
-                return new JsonResponse { result = null, error = error };
-            }
-
-            if (!parameters.ContainsKey("diff"))
-            {
-                JsonError error = new JsonError { code = (int)RPCErrorCode.RPC_INVALID_PARAMETER, message = "Parameter 'diff' is missing" };
-                return new JsonResponse { result = null, error = error };
-            }
-
-            string nonce = (string)parameters["nonce"];
-            if (nonce.Length < 1 || nonce.Length > 128)
-            {
-                Logging.info("Received incorrect verify nonce from miner.");
-                return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_INVALID_PARAMS, message = "Invalid nonce was specified" } };
-            }
-
-            ulong blocknum = ulong.Parse((string)parameters["blocknum"]);
-            PoolBlock block = node.getBlock(blocknum);
-            if (block == null)
-            {
-                Logging.info("Received incorrect verify block number from miner.");
-                return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_INVALID_PARAMS, message = "Invalid block number specified" } };
-            }
-
-            ulong blockdiff = ulong.Parse((string)parameters["diff"]);
-
-            byte[] solver_address = IxianHandler.getWalletStorage().getPrimaryAddress();
-
-            bool verify_result = node.verifyNonce_v3(nonce, blocknum, solver_address, blockdiff);
-
-            if (verify_result)
-            {
-                Logging.info("Received verify share: {0} #{1} - PASSED with diff {2}", nonce, blocknum, blockdiff);
-            }
-            else
-            {
-                Logging.info("Received verify share: {0} #{1} - REJECTED with diff {2}", nonce, blocknum, blockdiff);
-            }
-
-            return new JsonResponse { result = verify_result, error = null };
-        }
-
-        // Verifies and submits a mining solution to the network
-        private JsonResponse onSubmitMiningSolution(Dictionary<string, object> parameters)
-        {
-            // Check that all the required query parameters are sent
-            if (!parameters.ContainsKey("nonce"))
-            {
-                JsonError error = new JsonError { code = (int)RPCErrorCode.RPC_INVALID_PARAMETER, message = "Parameter 'nonce' is missing" };
-                return new JsonResponse { result = null, error = error };
-            }
-
-            if (!parameters.ContainsKey("blocknum"))
-            {
-                JsonError error = new JsonError { code = (int)RPCErrorCode.RPC_INVALID_PARAMETER, message = "Parameter 'blocknum' is missing" };
-                return new JsonResponse { result = null, error = error };
-            }
-
-
-            string nonce = (string)parameters["nonce"];
-            if (nonce.Length < 1 || nonce.Length > 128)
-            {
-                Logging.info("Received incorrect nonce from miner.");
-                return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_INVALID_PARAMS, message = "Invalid nonce was specified" } };
-            }
-
-            ulong blocknum = ulong.Parse((string)parameters["blocknum"]);
-            PoolBlock block = node.getBlock(blocknum);
-            if (block == null)
-            {
-                Logging.info("Received incorrect block number from miner.");
-                return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_INVALID_PARAMS, message = "Invalid block number specified" } };
-            }
-
-            Logging.info("Received miner share: {0} #{1}", nonce, blocknum);
-
-            byte[] solver_address = IxianHandler.getWalletStorage().getPrimaryAddress();
-            bool verify_result = node.verifyNonce_v3(nonce, blocknum, solver_address, block.difficulty);
-
-            bool send_result = false;
-
-            // Solution is valid, try to submit it to network
-            if (verify_result == true)
-            {
-                if (node.sendSolution(Crypto.stringToHash(nonce), blocknum))
-                {
-                    Logging.info("Miner share {0} ACCEPTED.", nonce);
-                    send_result = true;
-                }
-            }
-            else
-            {
-                Logging.warn("Miner share {0} REJECTED.", nonce);
-            }
-
-            return new JsonResponse { result = send_result, error = null };
-        }
-
         // Returns an empty PoW block based on the search algorithm provided as a parameter
         private JsonResponse onGetMiningBlock(Dictionary<string, object> parameters)
         {
-            PoolBlock block = node.getMiningBlock();
+            // Check that all the required query parameters are sent
+            if (!parameters.ContainsKey("id"))
+            {
+                JsonError error = new JsonError { code = (int)RPCErrorCode.RPC_INVALID_PARAMETER, message = "Parameter 'id' is missing." };
+                return new JsonResponse { result = null, error = error };
+            }
+            if (!parameters.ContainsKey("worker"))
+            {
+                JsonError error = new JsonError { code = (int)RPCErrorCode.RPC_INVALID_PARAMETER, message = "Parameter 'worker' is missing." };
+                return new JsonResponse { result = null, error = error };
+            }
+            if (!parameters.ContainsKey("wallet"))
+            {
+                JsonError error = new JsonError { code = (int)RPCErrorCode.RPC_INVALID_PARAMETER, message = "Parameter 'wallet' is missing." };
+                return new JsonResponse { result = null, error = error };
+            }
+            if (!parameters.ContainsKey("hr"))
+            {
+                JsonError error = new JsonError { code = (int)RPCErrorCode.RPC_INVALID_PARAMETER, message = "Parameter 'hr' is missing." };
+                return new JsonResponse { result = null, error = error };
+            }
+            if (!parameters.ContainsKey("miner"))
+            {
+                JsonError error = new JsonError { code = (int)RPCErrorCode.RPC_INVALID_PARAMETER, message = "Parameter 'miner' is missing." };
+                return new JsonResponse { result = null, error = error };
+            }
+
+            string id = (string)parameters["id"];
+            string worker = (string)parameters["worker"];
+            string wallet = (string)parameters["wallet"];
+
+            Dictionary<string, Object> resultArray = null;
+
+            if (cache.TryGetValue(id + "_" + worker + "_" + wallet, out resultArray))
+            {
+                return new JsonResponse { result = resultArray, error = null };
+            }
+
+            try
+            {
+                byte[] addressBytes = Base58Check.Base58CheckEncoding.DecodePlain(wallet);
+                if (!Address.validateChecksum(addressBytes))
+                {
+                    JsonError error = new JsonError { code = (int)RPCErrorCode.RPC_INVALID_PARAMETER, message = "Parameter 'wallet' is not a valid Ixian address." };
+                    return new JsonResponse { result = null, error = error };
+                }
+            }
+            catch (Exception e)
+            {
+                JsonError error = new JsonError { code = (int)RPCErrorCode.RPC_INVALID_PARAMETER, message = "Parameter 'wallet' is not a valid Ixian address." };
+                return new JsonResponse { result = null, error = error };
+            }
+
+            double hr = 0;
+            if(!Double.TryParse((string)parameters["hr"], out hr))
+            {
+                if (!parameters.ContainsKey("hr"))
+                {
+                    JsonError error = new JsonError { code = (int)RPCErrorCode.RPC_INVALID_PARAMETER, message = "Parameter 'hr' is invalid." };
+                    return new JsonResponse { result = null, error = error };
+                }
+            }
+
+            string version = (string)parameters["miner"];
+
+            Miner miner = new Miner((string)parameters["wallet"]);
+
+            if(!miner.isValid())
+            {
+                JsonError error = new JsonError { code = (int)RPCErrorCode.RPC_INTERNAL_ERROR, message = "Internal error while querying miner data." };
+                return new JsonResponse { result = null, error = error };
+            }
+
+            miner.selectWorker(id, worker);
+            miner.updateWorker(hr, version);
+
+            RepositoryBlock block = node.getMiningBlock();
             if (block == null)
             {
                 return new JsonResponse
@@ -298,16 +255,147 @@ namespace LP.Network
 
             byte[] solver_address = IxianHandler.getWalletStorage().getPrimaryAddress();
 
-            Dictionary<string, Object> resultArray = new Dictionary<string, Object>
+            resultArray = new Dictionary<string, Object>
             {
                 {"num", block.blockNum}, // Block number
                 {"ver", block.version}, // Block version
-                {"dif", block.difficulty}, // Block difficulty
+                {"dif", Pool.Pool.Instance.getDifficulty()}, // Block difficulty
                 {"chk", block.blockChecksum}, // Block checksum
                 {"adr", solver_address} // Solver address
             };
 
+            cache.Set(id + "_" + worker + "_" + wallet, resultArray, new TimeSpan(0, 0, 10));
+
+            miner.commit();
+
             return new JsonResponse {result = resultArray, error = null};
+        }
+
+        // Verifies and submits a mining solution to the network
+        private JsonResponse onSubmitMiningSolution(Dictionary<string, object> parameters)
+        {
+            // Check that all the required query parameters are sent
+            if (!parameters.ContainsKey("id"))
+            {
+                JsonError error = new JsonError { code = (int)RPCErrorCode.RPC_INVALID_PARAMETER, message = "Parameter 'id' is missing." };
+                return new JsonResponse { result = null, error = error };
+            }
+            if (!parameters.ContainsKey("worker"))
+            {
+                JsonError error = new JsonError { code = (int)RPCErrorCode.RPC_INVALID_PARAMETER, message = "Parameter 'worker' is missing." };
+                return new JsonResponse { result = null, error = error };
+            }
+            if (!parameters.ContainsKey("wallet"))
+            {
+                JsonError error = new JsonError { code = (int)RPCErrorCode.RPC_INVALID_PARAMETER, message = "Parameter 'wallet' is missing." };
+                return new JsonResponse { result = null, error = error };
+            }
+            if (!parameters.ContainsKey("nonce"))
+            {
+                JsonError error = new JsonError { code = (int)RPCErrorCode.RPC_INVALID_PARAMETER, message = "Parameter 'nonce' is missing" };
+                return new JsonResponse { result = null, error = error };
+            }
+            if (!parameters.ContainsKey("blocknum"))
+            {
+                JsonError error = new JsonError { code = (int)RPCErrorCode.RPC_INVALID_PARAMETER, message = "Parameter 'blocknum' is missing" };
+                return new JsonResponse { result = null, error = error };
+            }
+
+            string id = (string)parameters["id"];
+            string worker = (string)parameters["worker"];
+            string wallet = (string)parameters["wallet"];
+            try
+            {
+                byte[] addressBytes = Base58Check.Base58CheckEncoding.DecodePlain(wallet);
+                if (!Address.validateChecksum(addressBytes))
+                {
+                    JsonError error = new JsonError { code = (int)RPCErrorCode.RPC_INVALID_PARAMETER, message = "Parameter 'wallet' is not a valid Ixian address." };
+                    return new JsonResponse { result = null, error = error };
+                }
+            }
+            catch (Exception e)
+            {
+                JsonError error = new JsonError { code = (int)RPCErrorCode.RPC_INVALID_PARAMETER, message = "Parameter 'wallet' is not a valid Ixian address." };
+                return new JsonResponse { result = null, error = error };
+            }
+
+            string nonce = (string)parameters["nonce"];
+            if (nonce.Length < 1 || nonce.Length > 128)
+            {
+                Logging.info("Received incorrect nonce from miner.");
+                return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_INVALID_PARAMS, message = "Invalid nonce was specified" } };
+            }
+
+            ulong blocknum = 0;
+            if (!ulong.TryParse((string)parameters["blocknum"], out blocknum))
+            {
+                JsonError error = new JsonError { code = (int)RPCErrorCode.RPC_INVALID_PARAMETER, message = "Parameter 'blocknum' is not a number" };
+                return new JsonResponse { result = null, error = error };
+            }
+
+            RepositoryBlock block = node.getBlock(blocknum);
+            if (block == null)
+            {
+                Logging.info("Received incorrect block number from miner.");
+                return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_INVALID_PARAMS, message = "Invalid block number specified" } };
+            }
+
+            Miner miner = new Miner((string)parameters["wallet"]);
+
+            if (!miner.isValid())
+            {
+                JsonError error = new JsonError { code = (int)RPCErrorCode.RPC_INTERNAL_ERROR, message = "Internal error while querying miner data." };
+                return new JsonResponse { result = null, error = error };
+            }
+
+            Logging.info("Received miner share: {0} #{1}", nonce, blocknum);
+
+            byte[] solver_address = IxianHandler.getWalletStorage().getPrimaryAddress();
+
+            miner.selectWorker(id, worker);
+
+            bool valid_share, verify_result = false;
+            ulong difficulty = Pool.Pool.Instance.getDifficulty();
+            valid_share = node.verifyNonce_v3(nonce, blocknum, solver_address, difficulty);
+
+            if (valid_share)
+            {
+                if (!sharesStarted)
+                {
+                    sharesStarted = true;
+                    shareCountTimeStamp = DateTime.Now;
+                    shareCount = 0;
+                }
+                else
+                {
+                    shareCount++;
+                    if ((DateTime.Now - shareCountTimeStamp).TotalSeconds > 10)
+                    {
+                        Pool.Pool.Instance.updateSharesPerSecond((int)((double)shareCount / (double)((DateTime.Now - shareCountTimeStamp).TotalSeconds)));
+                        shareCount = 0;
+                        shareCountTimeStamp = DateTime.Now;
+                    }
+                }
+
+                verify_result = node.verifyNonce_v3(nonce, blocknum, solver_address, block.difficulty);
+                miner.addShare(blocknum, nonce, difficulty, verify_result);
+                miner.commit();
+            }
+
+            // Solution is valid, try to submit it to network
+            if (verify_result)
+            {
+                if (node.sendSolution(Crypto.stringToHash(nonce), blocknum))
+                {
+                    Logging.info("Miner share {0} ACCEPTED.", nonce);
+                }
+            }
+            else
+            {
+                Logging.warn("Miner share {0} REJECTED.", nonce);
+            }
+
+            return new JsonResponse { result = valid_share, error = valid_share ? null : new JsonError() { code = (int)RPCErrorCode.RPC_VERIFY_REJECTED, message = "Invalid share" } };
         }
     }
 }

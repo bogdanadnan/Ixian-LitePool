@@ -25,6 +25,16 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <Prefer32Bit>false</Prefer32Bit>
+    <CustomCommands>
+      <CustomCommands>
+        <Command>
+          <type>BeforeBuild</type>
+          <command>npm run build</command>
+          <workingdir>${ProjectDir}/website/</workingdir>
+          <externalConsole>True</externalConsole>
+        </Command>
+      </CustomCommands>
+    </CustomCommands>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <PlatformTarget>x64</PlatformTarget>
@@ -111,6 +121,43 @@
     <Reference Include="Microsoft.Owin.StaticFiles">
       <HintPath>packages\Microsoft.Owin.StaticFiles.4.2.0\lib\net45\Microsoft.Owin.StaticFiles.dll</HintPath>
     </Reference>
+    <Reference Include="System.Buffers">
+      <HintPath>packages\System.Buffers.4.5.1\lib\net461\System.Buffers.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Numerics.Vectors">
+      <HintPath>packages\System.Numerics.Vectors.4.5.0\lib\net46\System.Numerics.Vectors.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Runtime.CompilerServices.Unsafe">
+      <HintPath>packages\System.Runtime.CompilerServices.Unsafe.6.0.0\lib\net461\System.Runtime.CompilerServices.Unsafe.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Memory">
+      <HintPath>packages\System.Memory.4.5.4\lib\net461\System.Memory.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Extensions.Logging.Abstractions">
+      <HintPath>packages\Microsoft.Extensions.Logging.Abstractions.6.0.0\lib\net461\Microsoft.Extensions.Logging.Abstractions.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Extensions.Primitives">
+      <HintPath>packages\Microsoft.Extensions.Primitives.6.0.0\lib\net461\Microsoft.Extensions.Primitives.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Extensions.Caching.Abstractions">
+      <HintPath>packages\Microsoft.Extensions.Caching.Abstractions.6.0.0\lib\net461\Microsoft.Extensions.Caching.Abstractions.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Threading.Tasks.Extensions">
+      <HintPath>packages\System.Threading.Tasks.Extensions.4.5.4\lib\net461\System.Threading.Tasks.Extensions.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Bcl.AsyncInterfaces">
+      <HintPath>packages\Microsoft.Bcl.AsyncInterfaces.6.0.0\lib\net461\Microsoft.Bcl.AsyncInterfaces.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Extensions.DependencyInjection.Abstractions">
+      <HintPath>packages\Microsoft.Extensions.DependencyInjection.Abstractions.6.0.0\lib\net461\Microsoft.Extensions.DependencyInjection.Abstractions.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Extensions.Options">
+      <HintPath>packages\Microsoft.Extensions.Options.6.0.0\lib\net461\Microsoft.Extensions.Options.dll</HintPath>
+    </Reference>
+    <Reference Include="System.ComponentModel.DataAnnotations" />
+    <Reference Include="Microsoft.Extensions.Caching.Memory">
+      <HintPath>packages\Microsoft.Extensions.Caching.Memory.6.0.0\lib\net461\Microsoft.Extensions.Caching.Memory.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Commands\Commands.cs" />
@@ -122,6 +169,11 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Pool\Startup.cs" />
     <Compile Include="Pool\PoolController.cs" />
+    <Compile Include="Pool\Miner.cs" />
+    <Compile Include="DB\PoolDB.cs" />
+    <Compile Include="Pool\Pool.cs" />
+    <Compile Include="Meta\BlockStorage.cs" />
+    <Compile Include="Pool\Payment.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
@@ -137,7 +189,6 @@
     <None Include="website\e2e\app.e2e-spec.ts" />
     <None Include="website\e2e\app.po.ts" />
     <None Include="website\e2e\tsconfig.e2e.json" />
-    <None Include="website\src\favicon.ico" />
     <None Include="website\src\index.html" />
     <None Include="website\src\main.ts" />
     <None Include="website\src\tsconfig.app.json" />
@@ -147,7 +198,6 @@
     <None Include="website\src\polyfills.ts" />
     <None Include="website\src\tsconfig.spec.json" />
     <None Include="website\src\app\app.component.html" />
-    <None Include="website\src\app\app.component.spec.ts" />
     <None Include="website\src\app\app.module.ts" />
     <None Include="website\src\app\app.component.ts" />
     <None Include="website\src\app\app.component.css" />
@@ -164,7 +214,6 @@
     <None Include="website\src\app\shared\fixedplugin\fixedplugin.module.ts" />
     <None Include="website\src\app\shared\fixedplugin\fixedplugin.component.ts" />
     <None Include="website\src\app\shared\fixedplugin\fixedplugin.component.html" />
-    <None Include="website\src\app\layouts\admin-layout\admin-layout.component.spec.ts" />
     <None Include="website\src\app\layouts\admin-layout\admin-layout.component.ts" />
     <None Include="website\src\app\layouts\admin-layout\admin-layout.component.html" />
     <None Include="website\src\app\layouts\admin-layout\admin-layout.component.scss" />
@@ -188,7 +237,7 @@
     <None Include="website\src\app\pages\notifications\notifications.component.ts" />
     <None Include="website\src\environments\environment.prod.ts" />
     <None Include="website\src\environments\environment.ts" />
-    <None Include="website\src\assets\css\demo.css" />
+    <None Include="website\src\assets\css\global.css" />
     <None Include="website\src\assets\scss\paper-dashboard.scss" />
     <None Include="website\src\assets\scss\paper-dashboard\_sidebar-and-main-panel.scss" />
     <None Include="website\src\assets\scss\paper-dashboard\_navbar.scss" />
@@ -230,14 +279,11 @@
     <None Include="website\src\assets\scss\paper-dashboard\angular\_plugin-ngx-toastr.scss" />
     <None Include="website\src\assets\scss\paper-dashboard\angular\_dropdown.scss" />
     <None Include="website\src\assets\img\default-avatar.png" />
-    <None Include="website\src\assets\img\angular2-logo-white.png" />
     <None Include="website\src\assets\img\damir-bosnjak.jpg" />
     <None Include="website\src\assets\img\apple-icon.png" />
     <None Include="website\src\assets\img\angular.png" />
-    <None Include="website\src\assets\img\favicon.png" />
     <None Include="website\src\assets\img\header.jpg" />
     <None Include="website\src\assets\img\bg5.jpg" />
-    <None Include="website\src\assets\img\angular2-logo.png" />
     <None Include="website\src\assets\img\logo-small.png" />
     <None Include="website\src\assets\img\jan-sendereks.jpg" />
     <None Include="website\src\assets\img\mike.jpg" />
@@ -257,6 +303,8 @@
     <None Include="website\src\assets\fonts\nucleo-icons.ttf" />
     <None Include="website\src\assets\fonts\nucleo-icons.woff2" />
     <None Include="website\src\assets\fonts\nucleo-icons.woff" />
+    <None Include="website\src\assets\img\favicon.ico" />
+    <None Include="website\src\assets\img\ixian_icon.png" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Pool\" />
@@ -278,4 +326,5 @@
   </Target>
   <Import Project="packages\SQLitePCLRaw.lib.e_sqlite3.osx.1.1.14\build\net35\SQLitePCLRaw.lib.e_sqlite3.osx.targets" Condition="Exists('packages\SQLitePCLRaw.lib.e_sqlite3.osx.1.1.14\build\net35\SQLitePCLRaw.lib.e_sqlite3.osx.targets')" />
   <Import Project="packages\SQLitePCLRaw.lib.e_sqlite3.v110_xp.1.1.14\build\net35\SQLitePCLRaw.lib.e_sqlite3.v110_xp.targets" Condition="Exists('packages\SQLitePCLRaw.lib.e_sqlite3.v110_xp.1.1.14\build\net35\SQLitePCLRaw.lib.e_sqlite3.v110_xp.targets')" />
+  <Import Project="packages\Microsoft.Extensions.Logging.Abstractions.6.0.0\build\Microsoft.Extensions.Logging.Abstractions.targets" Condition="Exists('packages\Microsoft.Extensions.Logging.Abstractions.6.0.0\build\Microsoft.Extensions.Logging.Abstractions.targets')" />
 </Project>

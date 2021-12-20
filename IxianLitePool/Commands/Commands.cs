@@ -12,9 +12,10 @@ namespace IxianLitePool
 {
     class Commands
     {
-        public Commands()
+        Node node = null;
+        public Commands(Node node)
         {
-
+            this.node = node;
         }
 
         public void handleCommand(string line)
@@ -68,8 +69,43 @@ namespace IxianLitePool
                 case "verify":
                     handleVerify(line);
                     break;
+
+                case "block":
+                    handleBlock(line);
+                    break;
+
             }
         }
+
+        void handleBlock(string line)
+        {
+            string[] split = line.Split(new string[] { " " }, StringSplitOptions.None);
+            if (split.Count() < 2)
+            {
+                Console.WriteLine("Incorrect parameters for block. Should be block number.\n");
+                return;
+            }
+
+            ulong blockNum = 0;
+            if (!ulong.TryParse(split[1], out blockNum))
+            {
+                Console.WriteLine("Incorrect parameters for block. BlockNum is not a number.\n");
+                return;
+            }
+
+            RepositoryBlock blk = node.getBlock(blockNum);
+            if(blk == null)
+            {
+                Console.WriteLine("Incorrect parameters for block. BlockNum has not been retrieved or doesn't exist.\n");
+                return;
+            }
+
+            Console.WriteLine("Block Number: {0}", blk.blockNum);
+            Console.WriteLine("Block Version: {0}", blk.version);
+            Console.WriteLine("Block Difficulty: {0}", blk.difficulty);
+            Console.WriteLine("Block Checksum: {0}", Convert.ToBase64String(blk.blockChecksum));
+        }
+
 
         void handleHelp()
         {
@@ -91,13 +127,13 @@ namespace IxianLitePool
 
         void handleBalance()
         {
-            Node.getBalance();
+            var balance = node.getBalance();
             string verified = "";
-            if (Node.balance.verified)
+            if (balance.verified)
             {
                 //verified = " (verified)"; // not yet
             }
-            Console.WriteLine("Balance: {0} IXI{1}\n", Node.balance.balance, verified);
+            Console.WriteLine("Balance: {0} IXI{1}\n", balance.balance, verified);
         }
 
         void handleAddress()
@@ -189,7 +225,7 @@ namespace IxianLitePool
                 Console.WriteLine("Please type a positive amount.\n");
                 return;
             }
-            Node.sendTransaction(address, amount);
+            node.sendTransaction(address, amount);
         }
 
         void handleVerify(string line)

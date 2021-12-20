@@ -5,3 +5,9 @@ IxianLitePool/.idea
 IxianLitePool/packages
 IxianLitePool/bin
 IxianLitePool/obj
+IxianLitePool/website/node_modules
+IxianLitePool/website/package-lock.json
+IxianLitePool/website/dist
+IxianLitePool/website/.angular
+IxianLitePool/wwwroot/*
+

@@ -7,7 +7,7 @@ using System.Web.Http;
 
 namespace LP.Pool
 {
-    public class Pool
+    public class emp
     {
         public int Id { get; set; }
         public string Name { get; set; }
@@ -16,20 +16,20 @@ namespace LP.Pool
 
     public class PoolController : ApiController
     {
-        Pool[] employees = new Pool[]
+        emp[] employees = new emp[]
         {
-            new Pool{Id=0,Name="Morris",Salary="151110"},
-            new Pool{Id=1,Name="John", Salary="120000"},
-            new Pool{Id=2,Name="Chris",Salary="140000"},
-            new Pool{Id=3,Name="Siraj", Salary="90000"}
+            new emp{Id=0,Name="Morris",Salary="151110"},
+            new emp{Id=1,Name="John", Salary="120000"},
+            new emp{Id=2,Name="Chris",Salary="140000"},
+            new emp{Id=3,Name="Siraj", Salary="90000"}
         };
 
-        public IEnumerable<Pool> Get()
+        public IEnumerable<emp> Get()
         {
             return employees.ToList();
         }
 
-        public Pool Get(int Id)
+        public emp Get(int Id)
         {
             try
             {
@@ -37,7 +37,7 @@ namespace LP.Pool
             }
             catch (Exception)
             {
-                return new Pool();
+                return new emp();
             }
         }
 
