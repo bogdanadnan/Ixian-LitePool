@@ -28,6 +28,7 @@ namespace LP.Pool
         private bool paymentProcessorRunning = false;
         private Node node = null;
         private DateTime lastPaymentTimeStamp;
+        private List<PaymentDBType> unverifiedPayments = new List<PaymentDBType>();
 
         public Payment()
         {}
@@ -35,6 +36,8 @@ namespace LP.Pool
         public void start(Node node)
         {
             this.node = node;
+            unverifiedPayments = PoolDB.Instance.getUnverifiedPayments();
+
             if (paymentProcessorThread == null && !paymentProcessorRunning)
             {
                 paymentProcessorRunning = true;
@@ -119,7 +122,14 @@ namespace LP.Pool
                                 verified = false
                             };
 
-                            PoolDB.Instance.addPayment(payment);
+                            payment.id = PoolDB.Instance.addPayment(payment);
+                            if (payment.id > -1)
+                            {
+                                lock (unverifiedPayments)
+                                {
+                                    unverifiedPayments.Add(payment);
+                                }
+                            }
                         }
                         minerShare.Value.ForEach(shr => shr.processed = true);
                         PoolDB.Instance.updateShares(minerShare.Value);
@@ -127,6 +137,22 @@ namespace LP.Pool
                     }
                 }
             }
+        }
+
+        public bool verifyTransaction(string txId)
+        {
+            lock (unverifiedPayments)
+            {
+                var unverifiedPayment = unverifiedPayments.FirstOrDefault(p => p.txId == txId);
+                if (unverifiedPayment != null)
+                {
+                    unverifiedPayment.verified = true;
+                    PoolDB.Instance.updatePayment(unverifiedPayment);
+                    unverifiedPayments.RemoveAll(p => p.txId == txId);
+                    return true;
+                }
+            }
+            return false;
         }
     }
 }

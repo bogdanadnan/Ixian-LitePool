@@ -317,9 +317,28 @@ namespace LP.DB
             db.UpdateAll(shares);
         }
 
-        public void addPayment(PaymentDBType payment)
+        public int addPayment(PaymentDBType payment)
         {
-            db.Insert(payment);
+            int recs = db.Insert(payment);
+            if (recs == 0)
+            {
+                return -1;
+            }
+            else
+            {
+                return (int)SQLite3.LastInsertRowid(db.Handle);
+            }
+        }
+
+        public List<PaymentDBType> getUnverifiedPayments()
+        {
+            var oldestTimeStamp = DateTime.Now - TimeSpan.FromDays(1);
+            return db.Table<PaymentDBType>().Where(p => p.verified == false && p.timeStamp > oldestTimeStamp).ToList();
+        }
+
+        public void updatePayment(PaymentDBType payment)
+        {
+            db.Update(payment);
         }
     }
 }

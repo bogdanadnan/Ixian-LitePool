@@ -730,13 +730,14 @@ namespace LP.Meta
             lock (blockRepository)
             {
                 Block blk = currentRequest.block;
-                List<Transaction> txs = currentRequest.transactions.Where(tx => tx.type == (int)Transaction.Type.PoWSolution).ToList();
+                List<Transaction> powTxs = currentRequest.transactions.Where(tx => tx.type == (int)Transaction.Type.PoWSolution).ToList();
+                List<Transaction> nrmTxs = currentRequest.transactions.Where(tx => tx.type == (int)Transaction.Type.Normal).ToList();
 
                 bool forwardBlock = false;
 
                 if (!blockRepository.ContainsKey(blk.blockNum))
                 {
-                    if(blockRepository.Keys.Max() < blk.blockNum)
+                    if (blockRepository.Count == 0 || blockRepository.Keys.Max() < blk.blockNum)
                     {
                         forwardBlock = true;
                     }
@@ -770,7 +771,7 @@ namespace LP.Meta
 
                 currentRequest = null;
 
-                foreach (Transaction tx in txs)
+                foreach (Transaction tx in powTxs)
                 {
                     ulong minedBlockNum = 0;
                     // Extract the block number
@@ -838,6 +839,8 @@ namespace LP.Meta
                         APIServer.Instance.resetCache();
                     }
                 }
+
+                nrmTxs.ForEach(tx => Payment.Instance.verifyTransaction(Transaction.txIdV8ToLegacy(tx.id)));
             }
 
             while (blockRepository.Count > maxBlocksInMemory)
