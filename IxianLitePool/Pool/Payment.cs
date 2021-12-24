@@ -98,13 +98,20 @@ namespace LP.Pool
             int shareCount = 0;
             sharesByMiner.Values.ToList().ForEach(shrList => shareCount += shrList.Count);
 
-            var balance = node.getBalance().balance;
+            var totalBalance = node.getBalance().balance;
+            var pendingBalance = totalBalance;
 
-            if (balance > 100)
+            IxiNumber poolFee = new IxiNumber(Config.poolFee.ToString());
+
+            if (totalBalance > 100)
             {
+                if(Config.poolFee > 0)
+                {
+                    pendingBalance = totalBalance - (totalBalance * poolFee);
+                }
                 foreach (var minerShare in sharesByMiner)
                 {
-                    IxiNumber pendingValue = (balance * minerShare.Value.Count / shareCount) - ConsensusConfig.transactionPrice;
+                    IxiNumber pendingValue = (pendingBalance * minerShare.Value.Count / shareCount) - ConsensusConfig.transactionPrice;
                     var miner = miners.FirstOrDefault(m => m.id == minerShare.Key);
                     if(miner != null)
                     {
@@ -134,6 +141,35 @@ namespace LP.Pool
                         minerShare.Value.ForEach(shr => shr.processed = true);
                         PoolDB.Instance.updateShares(minerShare.Value);
                         PoolDB.Instance.updateMinerPendingBalance(miner.id, 0);
+                    }
+                }
+
+                if(Config.poolFee > 0)
+                {
+                    IxiNumber pendingValue = totalBalance - pendingBalance - ConsensusConfig.transactionPrice;
+
+                    string txId = node.sendTransaction(Config.poolFeeAddress, pendingValue);
+                    if (!String.IsNullOrEmpty(txId))
+                    {
+                        PaymentDBType payment = new PaymentDBType
+                        {
+                            id = -1,
+                            minerId = -1,
+                            txId = txId,
+                            value = ((decimal)pendingValue.getAmount()) / 100000000,
+                            fee = ((decimal)ConsensusConfig.transactionPrice.getAmount()) / 100000000,
+                            timeStamp = DateTime.Now,
+                            verified = false
+                        };
+
+                        payment.id = PoolDB.Instance.addPayment(payment);
+                        if (payment.id > -1)
+                        {
+                            lock (unverifiedPayments)
+                            {
+                                unverifiedPayments.Add(payment);
+                            }
+                        }
                     }
                 }
             }

@@ -19,6 +19,12 @@ namespace LP.Pool
                 routeTemplate: "api/{controller}/{id}",
                 defaults: new { id = RouteParameter.Optional }
                 );
+            config.Routes.MapHttpRoute(
+                name: "Config",
+                routeTemplate: "api/config",
+                defaults: new { controller = "config" }
+            );
+
             appBuilder.UseWebApi(config);
 
             var options = new FileServerOptions

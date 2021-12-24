@@ -16,6 +16,7 @@
     <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <PreBuildEventUseInBuild>true</PreBuildEventUseInBuild>
     <PlatformTarget>x64</PlatformTarget>
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
@@ -30,13 +31,14 @@
         <Command>
           <type>BeforeBuild</type>
           <command>npm run build</command>
-          <workingdir>${ProjectDir}/website/</workingdir>
+          <workingdir>${ProjectDir}/website</workingdir>
           <externalConsole>True</externalConsole>
         </Command>
       </CustomCommands>
     </CustomCommands>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <PreBuildEventUseInBuild>true</PreBuildEventUseInBuild>
     <PlatformTarget>x64</PlatformTarget>
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
@@ -46,6 +48,12 @@
     <WarningLevel>4</WarningLevel>
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
+  <ItemDefinitionGroup>
+    <PreBuildEvent>
+      <Command>npm --prefix ../../website run build</Command>
+      <Message>Building website ...</Message>
+    </PreBuildEvent>
+  </ItemDefinitionGroup>
   <ItemGroup>
     <Reference Include="BouncyCastle.Crypto, Version=1.8.8.0, Culture=neutral, PublicKeyToken=0e99375e54769942, processorArchitecture=MSIL">
       <HintPath>packages\Portable.BouncyCastle.1.8.8\lib\net40\BouncyCastle.Crypto.dll</HintPath>
@@ -168,12 +176,14 @@
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Pool\Startup.cs" />
-    <Compile Include="Pool\PoolController.cs" />
     <Compile Include="Pool\Miner.cs" />
     <Compile Include="DB\PoolDB.cs" />
     <Compile Include="Pool\Pool.cs" />
     <Compile Include="Meta\BlockStorage.cs" />
     <Compile Include="Pool\Payment.cs" />
+    <Compile Include="Pool\Controllers\ConfigController.cs" />
+    <Compile Include="Pool\Controllers\DashboardController.cs" />
+    <Compile Include="Helpers\MemCache.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
@@ -211,30 +221,15 @@
     <None Include="website\src\app\shared\footer\footer.module.ts" />
     <None Include="website\src\app\shared\footer\footer.component.ts" />
     <None Include="website\src\app\shared\footer\footer.component.html" />
-    <None Include="website\src\app\shared\fixedplugin\fixedplugin.module.ts" />
-    <None Include="website\src\app\shared\fixedplugin\fixedplugin.component.ts" />
-    <None Include="website\src\app\shared\fixedplugin\fixedplugin.component.html" />
     <None Include="website\src\app\layouts\admin-layout\admin-layout.component.ts" />
     <None Include="website\src\app\layouts\admin-layout\admin-layout.component.html" />
     <None Include="website\src\app\layouts\admin-layout\admin-layout.component.scss" />
     <None Include="website\src\app\layouts\admin-layout\admin-layout.routing.ts" />
     <None Include="website\src\app\layouts\admin-layout\admin-layout.module.ts" />
-    <None Include="website\src\app\pages\maps\maps.component.html" />
-    <None Include="website\src\app\pages\maps\maps.component.ts" />
-    <None Include="website\src\app\pages\upgrade\upgrade.component.ts" />
-    <None Include="website\src\app\pages\upgrade\upgrade.component.html" />
-    <None Include="website\src\app\pages\user\user.component.html" />
-    <None Include="website\src\app\pages\user\user.component.ts" />
     <None Include="website\src\app\pages\dashboard\dashboard.component.html" />
     <None Include="website\src\app\pages\dashboard\dashboard.component.ts" />
-    <None Include="website\src\app\pages\table\table.component.html" />
-    <None Include="website\src\app\pages\table\table.component.ts" />
-    <None Include="website\src\app\pages\icons\icons.component.html" />
-    <None Include="website\src\app\pages\icons\icons.component.ts" />
-    <None Include="website\src\app\pages\typography\typography.component.html" />
-    <None Include="website\src\app\pages\typography\typography.component.ts" />
-    <None Include="website\src\app\pages\notifications\notifications.component.html" />
-    <None Include="website\src\app\pages\notifications\notifications.component.ts" />
+    <None Include="website\src\app\pages\miners\miners.component.html" />
+    <None Include="website\src\app\pages\miners\miners.component.ts" />
     <None Include="website\src\environments\environment.prod.ts" />
     <None Include="website\src\environments\environment.ts" />
     <None Include="website\src\assets\css\global.css" />
@@ -312,6 +307,8 @@
     <Content Include="wwwroot\**">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Folder Include="Pool\Controllers\" />
+    <Folder Include="Helpers\" />
   </ItemGroup>
   <Import Project="..\..\Ixian-Core\IXICore.projitems" Label="Shared" />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

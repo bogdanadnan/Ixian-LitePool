@@ -204,3 +204,10 @@
   outline: none;
   display: none;
 }
+
+.script {
+    text-transform: none;
+    font-weight: 400;
+    color: #9a9a9a;
+    font-size: 1em;
+}

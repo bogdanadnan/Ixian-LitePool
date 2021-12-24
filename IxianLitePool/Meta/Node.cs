@@ -115,9 +115,12 @@ namespace LP.Meta
 
         private void updaterThread()
         {
+            int sleepTime = 500;
+
             while (updaterRunning)
             {
-                Thread.Sleep(500);
+                Thread.Sleep(sleepTime);
+                sleepTime = 500;
 
                 ActivePoolBlock activePoolBlock = Pool.Pool.Instance.getActiveBlock();
                 if (activePoolBlock != null &&
@@ -156,6 +159,7 @@ namespace LP.Meta
                                 {
                                     Console.WriteLine("Requesting block {0} from storage", lowestBlockNum);
                                     addBlockFromStorage(lowestBlockNum);
+                                    sleepTime = 10;
                                     continue;
                                 }
                                 else

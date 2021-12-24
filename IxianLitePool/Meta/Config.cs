@@ -21,6 +21,11 @@ namespace LP.Meta
         public static ulong startingDifficulty = 10000;
         public static int targetSharesPerSecond = 10;
 
+        public static double poolFee = 0.00;
+        public static string poolFeeAddress = "";
+
+        public static string poolUrl = "";
+
         private Config()
         {
 
@@ -41,6 +46,9 @@ namespace LP.Meta
             Console.WriteLine("    --password\t\t Specify the password for the wallet (be careful with this)");
             Console.WriteLine("    --difficulty\t\t Specify the starting difficulty for the pool");
             Console.WriteLine("    --sharesPerSec\t\t Specify the target shares per second accepted by the pool");
+            Console.WriteLine("    --poolFee\t\t Specify the pool fee");
+            Console.WriteLine("    --poolFeeAddress\t\t Specify the Ixian address where to collect fee");
+            Console.WriteLine("    --poolUrl\t\t Specify the url that should be used to access the pool - used for display purpose only");
             Console.WriteLine("----------- Config File Options -----------");
             Console.WriteLine(" Config file options should use parameterName = parameterValue syntax.");
             Console.WriteLine(" Config file options are stored in ixan.cfg file.");
@@ -57,11 +65,11 @@ namespace LP.Meta
         {
         }
 
-        private static void readConfigFile(string filename)
+        private static bool readConfigFile(string filename)
         {
             if (!File.Exists(filename))
             {
-                return;
+                return true;
             }
 
             Logging.info("Reading config file: " + filename);
@@ -86,10 +94,28 @@ namespace LP.Meta
                 switch (key)
                 {
                     case "api":
-                        apiPort = int.Parse(value);
+                        if (!int.TryParse(value, out apiPort))
+                        {
+                            Console.WriteLine("API port should be an integer positive number.");
+                            return false;
+                        }
+                        if (apiPort < 0)
+                        {
+                            Console.WriteLine("API port should be an integer positive number.");
+                            return false;
+                        }
                         break;
                     case "pool":
-                        poolPort = int.Parse(value);
+                        if (!int.TryParse(value, out poolPort))
+                        {
+                            Console.WriteLine("Pool website port should be an integer positive number.");
+                            return false;
+                        }
+                        if (poolPort < 0)
+                        {
+                            Console.WriteLine("Pool website port should be an integer positive number.");
+                            return false;
+                        }
                         break;
                     case "wallet":
                         walletFile = value;
@@ -98,24 +124,68 @@ namespace LP.Meta
                         walletPassword = value;
                         break;
                     case "difficulty":
-                        startingDifficulty = ulong.Parse(value);
+                        if (!ulong.TryParse(value, out startingDifficulty))
+                        {
+                            Console.WriteLine("Difficulty should be an integer positive number.");
+                            return false;
+                        }
                         break;
                     case "sharesPerSec":
-                        targetSharesPerSecond = int.Parse(value);
+                        if (!int.TryParse(value, out targetSharesPerSecond))
+                        {
+                            Console.WriteLine("Target shares per second should be an integer positive number.");
+                            return false;
+                        }
+                        if(targetSharesPerSecond < 0)
+                        {
+                            Console.WriteLine("Target shares per second should be an integer positive number.");
+                            return false;
+                        }
                         break;
+                    case "poolFee":
+                        if(!double.TryParse(value, out poolFee))
+                        {
+                            Console.WriteLine("Pool fee value should be a floating point number between 0 and 1.");
+                            return false;
+                        }
+                        if(poolFee > 1 || poolFee < 0)
+                        {
+                            Console.WriteLine("Pool fee value should be a floating point number between 0 and 1.");
+                            return false;
+                        }
+
+                        break;
+                    case "poolFeeAddress":
+                        poolFeeAddress = value;
+                        break;
+
+                    case "poolUrl":
+                        poolUrl = value;
+                        break;
+
                     default:
                         // unknown key
-                        Logging.warn("Unknown config parameter was specified '" + key + "'");
-                        break;
+                        Console.WriteLine("Unknown config parameter was specified '" + key + "'");
+                        return false;
                 }
             }
+
+            if(poolFee > 0 && String.IsNullOrEmpty(poolFeeAddress))
+            {
+                Console.WriteLine("Pool fee address must not be empty if pool fee is higher than 0.");
+            }
+
+            return true;
         }
 
         public static bool init(string[] args)
         {
             bool continueProcessing = true;
 
-            readConfigFile("ixian.cfg");
+            if(!readConfigFile("ixian.cfg"))
+            {
+                return false;
+            }
 
             var cmd_parser = new FluentCommandLineParser();
 
@@ -143,7 +213,17 @@ namespace LP.Meta
             // target shares per second
             cmd_parser.Setup<int>("sharesPerSec").Callback(value => targetSharesPerSecond = value);
 
+            cmd_parser.Setup<double>("poolFee").Callback(value => poolFee = value);
+            cmd_parser.Setup<string>("poolFeeAddress").Callback(value => poolFeeAddress = value);
+
+            cmd_parser.Setup<string>("poolUrl").Callback(value => poolUrl = value);
+
             cmd_parser.Parse(args);
+
+            if(poolFee > 1 || poolFee < 0)
+            {
+                poolFee = 0.01;
+            }
 
             return continueProcessing;
         }
