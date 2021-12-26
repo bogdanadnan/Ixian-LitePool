@@ -43,6 +43,7 @@ namespace LP.Pool
                 paymentProcessorRunning = true;
                 lastPaymentTimeStamp = DateTime.Now;
                 paymentProcessorThread = new Thread(paymentProcessor);
+                paymentProcessorThread.Start();
             }
         }
 
