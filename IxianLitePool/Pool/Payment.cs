@@ -177,16 +177,17 @@ namespace LP.Pool
 
         public bool verifyTransaction(string txId)
         {
+            PaymentDBType unverifiedPayment = null;
             lock (unverifiedPayments)
             {
-                var unverifiedPayment = unverifiedPayments.FirstOrDefault(p => p.txId == txId);
-                if (unverifiedPayment != null)
-                {
-                    unverifiedPayment.verified = true;
-                    PoolDB.Instance.updatePayment(unverifiedPayment);
-                    unverifiedPayments.RemoveAll(p => p.txId == txId);
-                    return true;
-                }
+                unverifiedPayment = unverifiedPayments.FirstOrDefault(p => p.txId == txId);
+            }
+            if (unverifiedPayment != null)
+            {
+                unverifiedPayment.verified = true;
+                PoolDB.Instance.updatePayment(unverifiedPayment);
+                unverifiedPayments.RemoveAll(p => p.txId == txId);
+                return true;
             }
             return false;
         }

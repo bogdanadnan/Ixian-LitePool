@@ -64,6 +64,7 @@ namespace LP.Meta
 
         private Dictionary<byte[], ulong> transactionMapping = new Dictionary<byte[], ulong>(new ByteArrayComparer());
         private Dictionary<ulong, RepositoryBlock> blockRepository = new Dictionary<ulong, RepositoryBlock>();
+        private ulong lastBlockHeight = 0; 
 
         private Dictionary<ulong, RequestData> requestsQueue = new Dictionary<ulong, RequestData>();
         private object currentRequestLock = new object();
@@ -128,8 +129,8 @@ namespace LP.Meta
                 {
                     Console.WriteLine("Active mining block {0} timed out without resolution, resetting.", activePoolBlock.blockNum);
                     Pool.Pool.Instance.resetActiveBlock(MiningBlockResolution.TimedOut);
-                    APIServer.Instance.resetCache();
                 }
+
 
                 lock (currentRequestLock)
                 {
@@ -192,25 +193,28 @@ namespace LP.Meta
                         }
                         else // reset request completely and try again
                         {
-                            if (currentRequest.block == null || (blockRepository.Count > 0 && currentRequest.blockNum < blockRepository.Keys.Min())) // no request containing the block has been received, or this is a backward loading block, there is no point in trying again
+                            lock (blockRepository)
                             {
-                                Console.WriteLine("Request for block {0} exceeded max retries with no data received, bailing out.", currentRequest.blockNum);
-                                currentRequest = null;
-                            }
-                            else
-                            {
-                                Console.WriteLine("Request for block {0} exceeded max retries with some data received, resetting and trying again.", currentRequest.blockNum);
-                                // reset transaction mapping and request data and try again
-                                lock (transactionMapping)
+                                if (currentRequest.block == null || (blockRepository.Count > 0 && currentRequest.blockNum < blockRepository.Keys.Min())) // no request containing the block has been received, or this is a backward loading block, there is no point in trying again
                                 {
-                                    transactionMapping.Clear();
+                                    Console.WriteLine("Request for block {0} exceeded max retries with no data received, bailing out.", currentRequest.blockNum);
+                                    currentRequest = null;
                                 }
+                                else
+                                {
+                                    Console.WriteLine("Request for block {0} exceeded max retries with some data received, resetting and trying again.", currentRequest.blockNum);
+                                    // reset transaction mapping and request data and try again
+                                    lock (transactionMapping)
+                                    {
+                                        transactionMapping.Clear();
+                                    }
 
-                                currentRequest.block = null;
-                                currentRequest.transactions.Clear();
-                                currentRequest.timeStamp = DateTime.Now;
-                                currentRequest.retryCount = 0;
-                                currentRequest.endpoint = broadcastGetBlock(currentRequest.blockNum, null, null, 0, true);
+                                    currentRequest.block = null;
+                                    currentRequest.transactions.Clear();
+                                    currentRequest.timeStamp = DateTime.Now;
+                                    currentRequest.retryCount = 0;
+                                    currentRequest.endpoint = broadcastGetBlock(currentRequest.blockNum, null, null, 0, true);
+                                }
                             }
                         }
                     }
@@ -423,17 +427,7 @@ namespace LP.Meta
 
         public override ulong getLastBlockHeight()
         {
-            lock (blockRepository)
-            {
-                if (blockRepository.Count > 0)
-                {
-                    return blockRepository.Keys.Max();
-                }
-                else
-                {
-                    return 0;
-                }
-            }
+            return lastBlockHeight;
         }
 
         public override bool isAcceptingConnections()
@@ -673,6 +667,10 @@ namespace LP.Meta
                     if (!blockRepository.ContainsKey(blk.blockNum))
                     {
                         blockRepository.Add(blk.blockNum, blk);
+                        if(lastBlockHeight < blk.blockNum)
+                        {
+                            lastBlockHeight = blk.blockNum;
+                        }
                     }
 
                     foreach (var solver in solvers)
@@ -706,7 +704,6 @@ namespace LP.Meta
                                 Console.WriteLine("Block that was currently mined has already been resolved by someone else, resetting active mining block");
                                 Pool.Pool.Instance.resetActiveBlock(MiningBlockResolution.SolveByOther);
                             }
-                            APIServer.Instance.resetCache();
                         }
                     }
 
@@ -719,7 +716,6 @@ namespace LP.Meta
                         {
                             Console.WriteLine("Block that was currently mined is older than allowed, resetting active mining block");
                             Pool.Pool.Instance.resetActiveBlock(MiningBlockResolution.EvictedFromRedactedWindow);
-                            APIServer.Instance.resetCache();
                         }
 
                         blockRepository.Remove(toRemove);
@@ -754,6 +750,11 @@ namespace LP.Meta
                         blockChecksum = blk.blockChecksum,
                         timeStamp = DateTimeOffset.FromUnixTimeSeconds(blk.timestamp).DateTime
                     });
+
+                    if(lastBlockHeight < blk.blockNum)
+                    {
+                        lastBlockHeight = blk.blockNum;
+                    }
                 }
 
                 if (!BlockStorage.Instance.hasBlockInStorage(blk.blockNum))
@@ -840,26 +841,24 @@ namespace LP.Meta
                             Console.WriteLine("Block that was currently mined has already been resolved by someone else, resetting active mining block");
                             Pool.Pool.Instance.resetActiveBlock(MiningBlockResolution.SolveByOther);
                         }
-                        APIServer.Instance.resetCache();
                     }
                 }
 
                 nrmTxs.ForEach(tx => Payment.Instance.verifyTransaction(Transaction.txIdV8ToLegacy(tx.id)));
-            }
 
-            while (blockRepository.Count > maxBlocksInMemory)
-            {
-                ulong toRemove = blockRepository.Keys.Min();
-
-                ActivePoolBlock activePoolBlock = Pool.Pool.Instance.getActiveBlock();
-                if (activePoolBlock != null && activePoolBlock.blockNum == toRemove)
+                while (blockRepository.Count > maxBlocksInMemory)
                 {
-                    Console.WriteLine("Block that was currently mined is older than allowed, resetting active mining block");
-                    Pool.Pool.Instance.resetActiveBlock(MiningBlockResolution.EvictedFromRedactedWindow);
-                    APIServer.Instance.resetCache();
-                }
+                    ulong toRemove = blockRepository.Keys.Min();
 
-                blockRepository.Remove(toRemove);
+                    ActivePoolBlock activePoolBlock = Pool.Pool.Instance.getActiveBlock();
+                    if (activePoolBlock != null && activePoolBlock.blockNum == toRemove)
+                    {
+                        Console.WriteLine("Block that was currently mined is older than allowed, resetting active mining block");
+                        Pool.Pool.Instance.resetActiveBlock(MiningBlockResolution.EvictedFromRedactedWindow);
+                    }
+
+                    blockRepository.Remove(toRemove);
+                }
             }
         }
 
@@ -1186,7 +1185,6 @@ namespace LP.Meta
             }
 
             Pool.Pool.Instance.resetActiveBlock(MiningBlockResolution.SolvedByPool);
-            APIServer.Instance.resetCache();
 
             Transaction transaction = new Transaction((int) Transaction.Type.PoWSolution, new IxiNumber(0),
                 new IxiNumber(0), ConsensusConfig.ixianInfiniMineAddress, from, data, pubkey,

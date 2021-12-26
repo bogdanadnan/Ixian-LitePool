@@ -1,6 +1,7 @@
 ﻿using System;
 using LP.DB;
 using LP.Meta;
+using LP.Network;
 using static LP.DB.PoolDB;
 
 namespace LP.Pool
@@ -106,6 +107,7 @@ namespace LP.Pool
                     }
                 }
                 activePoolBlock = null;
+                APIServer.Instance.resetCache();
             }
         }
 
