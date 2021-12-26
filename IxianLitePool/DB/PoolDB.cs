@@ -57,6 +57,7 @@ namespace LP.DB
 
             public long difficulty { get; set; }
 
+            [Indexed]
             public string nonce { get; set; }
 
             public bool blockResolved { get; set; }
@@ -339,6 +340,11 @@ namespace LP.DB
         public void updatePayment(PaymentDBType payment)
         {
             db.Update(payment);
+        }
+
+        public bool shareExists(string nonce)
+        {
+            return db.Table<ShareDBType>().FirstOrDefault(shr => shr.nonce == nonce) != null;
         }
     }
 }

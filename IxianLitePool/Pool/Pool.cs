@@ -141,5 +141,10 @@ namespace LP.Pool
                 activePoolBlock = blk;
             } 
         }
+
+        public bool checkDuplicateShare(string nonce)
+        {
+            return PoolDB.Instance.shareExists(nonce);
+        }
     }
 }

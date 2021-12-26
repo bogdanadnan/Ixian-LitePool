@@ -80,6 +80,8 @@ namespace LP.Pool
             sharesByMiner.Values.ToList().ForEach(shrList => shareCount += shrList.Count);
 
             var balance = ((decimal)node.getBalance().balance.getAmount()) / 100000000;
+            balance -= (balance * (decimal)Config.poolFee);
+
             if(balance > 100) // safety net to avoid running this too many times if some balance remains in the wallet
             {
                 foreach (var miner in sharesByMiner)
@@ -112,10 +114,13 @@ namespace LP.Pool
                 }
                 foreach (var minerShare in sharesByMiner)
                 {
-                    IxiNumber pendingValue = (pendingBalance * minerShare.Value.Count / shareCount) - ConsensusConfig.transactionPrice;
                     var miner = miners.FirstOrDefault(m => m.id == minerShare.Key);
                     if(miner != null)
                     {
+                        IxiNumber pendingValue = (pendingBalance * minerShare.Value.Count / shareCount);
+                        IxiNumber fee = node.getTransactionFee(miner.address, pendingValue);
+                        pendingValue -= fee;
+
                         string txId = node.sendTransaction(miner.address, pendingValue);
                         if(!String.IsNullOrEmpty(txId))
                         {
@@ -125,7 +130,7 @@ namespace LP.Pool
                                 minerId = miner.id,
                                 txId = txId,
                                 value = ((decimal)pendingValue.getAmount()) / 100000000,
-                                fee = ((decimal)ConsensusConfig.transactionPrice.getAmount()) / 100000000,
+                                fee = ((decimal)fee.getAmount()) / 100000000,
                                 timeStamp = DateTime.Now,
                                 verified = false
                             };
@@ -147,7 +152,9 @@ namespace LP.Pool
 
                 if(Config.poolFee > 0)
                 {
-                    IxiNumber pendingValue = totalBalance - pendingBalance - ConsensusConfig.transactionPrice;
+                    IxiNumber pendingValue = totalBalance - pendingBalance;
+                    IxiNumber fee = node.getTransactionFee(Config.poolFeeAddress, pendingValue);
+                    pendingValue -= fee;
 
                     string txId = node.sendTransaction(Config.poolFeeAddress, pendingValue);
                     if (!String.IsNullOrEmpty(txId))
@@ -158,7 +165,7 @@ namespace LP.Pool
                             minerId = -1,
                             txId = txId,
                             value = ((decimal)pendingValue.getAmount()) / 100000000,
-                            fee = ((decimal)ConsensusConfig.transactionPrice.getAmount()) / 100000000,
+                            fee = ((decimal)fee.getAmount()) / 100000000,
                             timeStamp = DateTime.Now,
                             verified = false
                         };

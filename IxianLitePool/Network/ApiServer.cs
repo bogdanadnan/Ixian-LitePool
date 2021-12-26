@@ -325,8 +325,13 @@ namespace LP.Network
                 Logging.info("Received incorrect nonce from miner.");
                 return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_INVALID_PARAMS, message = "Invalid nonce was specified" } };
             }
+            if(Pool.Pool.Instance.checkDuplicateShare(nonce))
+            {
+                Logging.info("Received duplicate nonce from miner.");
+                return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_INVALID_PARAMS, message = "Duplicate nonce was specified" } };
+            }
 
-            ulong blocknum = 0;
+            ulong blocknum;
             if (!ulong.TryParse((string)parameters["blocknum"], out blocknum))
             {
                 JsonError error = new JsonError { code = (int)RPCErrorCode.RPC_INVALID_PARAMETER, message = "Parameter 'blocknum' is not a number" };

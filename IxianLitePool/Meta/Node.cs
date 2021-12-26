@@ -360,6 +360,18 @@ namespace LP.Meta
             return balance;
         }
 
+        public IxiNumber getTransactionFee(string address, IxiNumber amount)
+        {
+            SortedDictionary<byte[], IxiNumber> to_list = new SortedDictionary<byte[], IxiNumber>(new ByteArrayComparer());
+
+            byte[] from = IxianHandler.getWalletStorage().getPrimaryAddress();
+            byte[] pubKey = IxianHandler.getWalletStorage().getPrimaryPublicKey();
+            to_list.AddOrReplace(Base58Check.Base58CheckEncoding.DecodePlain(address), amount);
+            Transaction transaction = new Transaction((int)Transaction.Type.Normal, ConsensusConfig.transactionPrice, to_list, from, null, pubKey, IxianHandler.getHighestKnownNetworkBlockHeight());
+
+            return transaction.fee;
+        }
+
         public string sendTransaction(string address, IxiNumber amount)
         {
             var balance = getBalance();
@@ -372,11 +384,10 @@ namespace LP.Meta
 
             SortedDictionary<byte[], IxiNumber> to_list = new SortedDictionary<byte[], IxiNumber>(new ByteArrayComparer());
 
-            IxiNumber fee = ConsensusConfig.transactionPrice;
             byte[] from = IxianHandler.getWalletStorage().getPrimaryAddress();
             byte[] pubKey = IxianHandler.getWalletStorage().getPrimaryPublicKey();
             to_list.AddOrReplace(Base58Check.Base58CheckEncoding.DecodePlain(address), amount);
-            Transaction transaction = new Transaction((int)Transaction.Type.Normal, fee, to_list, from, null, pubKey, IxianHandler.getHighestKnownNetworkBlockHeight());
+            Transaction transaction = new Transaction((int)Transaction.Type.Normal, ConsensusConfig.transactionPrice, to_list, from, null, pubKey, IxianHandler.getHighestKnownNetworkBlockHeight());
 
             string txId = Transaction.txIdV8ToLegacy(transaction.id);
             if (IxianHandler.addTransaction(transaction, true))
