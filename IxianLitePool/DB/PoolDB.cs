@@ -346,5 +346,21 @@ namespace LP.DB
         {
             return db.Table<ShareDBType>().FirstOrDefault(shr => shr.nonce == nonce) != null;
         }
+
+        public void getActiveMinersCount(out int activeMinersCount, out int activeWorkersCount)
+        {
+            activeMinersCount = db.ExecuteScalar<int>("SELECT COUNT(id) FROM Miner WHERE lastSeen > ?", DateTime.Now - (new TimeSpan(0, 5, 0)));
+            activeWorkersCount = db.ExecuteScalar<int>("SELECT COUNT(id) FROM Worker WHERE lastSeen > ?", DateTime.Now - (new TimeSpan(0, 5, 0)));
+        }
+
+        public decimal getTotalPayments()
+        {
+            return db.ExecuteScalar<decimal>("SELECT SUM(value) FROM Payment WHERE minerId > -1 AND verified = 1");
+        }
+
+        public double getTotalHashrate()
+        {
+            return db.ExecuteScalar<double>("SELECT SUM(hashrate) FROM Worker WHERE lastSeen > ?", DateTime.Now - (new TimeSpan(0, 5, 0)));
+        }
     }
 }

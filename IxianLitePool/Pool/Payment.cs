@@ -199,5 +199,10 @@ namespace LP.Pool
             }
             return false;
         }
+
+        public static decimal getTotalPayments()
+        {
+            return PoolDB.Instance.getTotalPayments();
+        }
     }
 }

@@ -1,4 +1,7 @@
 import { Component, OnInit } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import * as moment from "moment";
+//import { Observable } from '@rxjs/Observable';
 import Chart from 'chart.js';
 declare var Config;
 
@@ -14,13 +17,28 @@ export class DashboardComponent implements OnInit{
   public ctx;
   public chartColor;
   public chartEmail;
-  public chartHours;
+    public chartHours;
+
+    private oneSecondUpdater: any;
+    private oneMinuteUpdater: any;
+    private tenMinutesUpdater: any;
 
     ngOnInit() {
         document.getElementById("poolUrl").innerText = Config.poolUrl;
         document.getElementById("poolFee").innerText = (Config.poolFee * 100).toFixed(2);
         document.getElementById("blockReward").innerText = Config.blockReward.toFixed(2);
 
+//        this.oneSecondUpdater = interval(1000).subscribe(i => {
+//            this.globalStatus.uptime++;
+//            this.globalStatus.uptimeHours = (new Date(this.globalStatus.uptime * 1000)).toISOString().substr(11, 8);
+//        });
+//        this.oneMinuteUpdater = interval(60000).subscribe(i => {
+//            this.updateDashboardData();
+//            this.updateWorkerList();
+//        });
+//        this.tenMinutesUpdater = interval(600000).subscribe(i => {
+//            this.updateWalletData();
+//        });
 
       this.chartColor = "#FFFFFF";
 

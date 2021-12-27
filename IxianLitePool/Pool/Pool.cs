@@ -146,5 +146,11 @@ namespace LP.Pool
         {
             return PoolDB.Instance.shareExists(nonce);
         }
+
+        public static int getTotalHashrate()
+        {
+            double hr = PoolDB.Instance.getTotalHashrate();
+            return (int)Math.Floor(hr / 1000.0);
+        }
     }
 }

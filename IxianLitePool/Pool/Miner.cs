@@ -99,5 +99,10 @@ namespace LP.Pool
                 };
             }
         }
+
+        public static void getActiveMinersCount(out int activeMinersCount, out int activeWorkersCount)
+        {
+            PoolDB.Instance.getActiveMinersCount(out activeMinersCount, out activeWorkersCount);
+        }
     }
 }

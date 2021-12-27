@@ -6,14 +6,18 @@ using System.Threading.Tasks;
 using System.Web.Http;
 using LP.Helpers;
 using Microsoft.Extensions.Caching.Memory;
+using IXICore.Meta;
 
 namespace LP.Pool
 {
     public class DashboardData
     {
-        public int Id { get; set; }
-        public string Name { get; set; }
-        public string Salary { get; set; }
+        public ulong NetworkBlockHeight { get; set; }
+        public ulong ActiveMiningBlock { get; set; }
+        public int Miners { get; set; }
+        public int Workers { get; set; }
+        public decimal TotalPayments { get; set; }
+        public int PoolHashrate { get; set; }
     }
 
     public class DashboardController : ApiController
@@ -27,7 +31,20 @@ namespace LP.Pool
                 return dashboardData;
             }
 
-            dashboardData = new DashboardData { Id = 0, Name = "test name", Salary = "test salary" };
+            var activeBlock = Pool.Instance.getActiveBlock();
+            int activeMinersCount, activeWorkersCount;
+            Miner.getActiveMinersCount(out activeMinersCount, out activeWorkersCount);
+
+            dashboardData = new DashboardData
+            {
+                NetworkBlockHeight = IxianHandler.getHighestKnownNetworkBlockHeight(),
+                ActiveMiningBlock = activeBlock != null ? activeBlock.blockNum : 0,
+                Miners = activeMinersCount,
+                Workers = activeWorkersCount,
+                TotalPayments = Payment.getTotalPayments(),
+                PoolHashrate = Pool.getTotalHashrate()
+            };
+
             MemCache.Instance.Set("dashboard_data", dashboardData, new TimeSpan(0, 1, 0));
 
             return dashboardData;
