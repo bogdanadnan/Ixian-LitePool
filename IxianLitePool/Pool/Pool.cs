@@ -152,5 +152,10 @@ namespace LP.Pool
             double hr = PoolDB.Instance.getTotalHashrate();
             return (int)Math.Floor(hr / 1000.0);
         }
+
+        public static int getBlocksMinedInLast24h()
+        {
+            return PoolDB.Instance.getBlocksMinedSince(DateTime.Now - (new TimeSpan(24, 0, 0)));
+        }
     }
 }

@@ -8,6 +8,7 @@ using System.Web.Http.Results;
 using LP.Helpers;
 using Microsoft.Extensions.Caching.Memory;
 using IXICore.Meta;
+using System.Net.Http;
 
 namespace LP.Pool
 {
@@ -19,6 +20,9 @@ namespace LP.Pool
         public int Workers { get; set; }
         public decimal TotalPayments { get; set; }
         public int PoolHashrate { get; set; }
+        public ulong PoolDifficulty { get; set; }
+        public int BlocksMined { get; set; }
+        public decimal IxiPrice { get; set; }
     }
 
     public class DashboardController : ApiController
@@ -43,12 +47,20 @@ namespace LP.Pool
                 Miners = activeMinersCount,
                 Workers = activeWorkersCount,
                 TotalPayments = Payment.getTotalPayments(),
-                PoolHashrate = Pool.getTotalHashrate()
+                PoolHashrate = Pool.getTotalHashrate(),
+                PoolDifficulty = Pool.Instance.getDifficulty(),
+                BlocksMined = Pool.getBlocksMinedInLast24h(),
+                IxiPrice = get1000IxiPrice()
             };
 
             MemCache.Instance.Set("dashboard_data", dashboardData, new TimeSpan(0, 1, 0));
 
             return Json(dashboardData);
+        }
+
+        private decimal get1000IxiPrice()
+        {
+            return IxiPrice.Instance.getIxiPrice() * 1000;
         }
     }
 }

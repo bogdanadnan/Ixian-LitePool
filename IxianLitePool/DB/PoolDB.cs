@@ -384,5 +384,11 @@ namespace LP.DB
             var result = db.Query<DoubleData>("SELECT SUM(\"hashrate\") AS \"value\" FROM \"Worker\" WHERE \"lastSeen\" > ?", limit).FirstOrDefault();
             return result != null ? result.value : 0;
         }
+
+        public int getBlocksMinedSince(DateTime since)
+        {
+            var result = db.Query<IntegerData>("SELECT COUNT(\"blockNum\") AS \"value\" FROM \"PoolBlock\" WHERE \"miningStart\" > ? AND \"resolution\" = 2", since).FirstOrDefault();
+            return result != null ? result.value : 0;
+        }
     }
 }

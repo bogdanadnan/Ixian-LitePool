@@ -7,6 +7,7 @@ using LP.Network;
 using LP.Pool;
 using Microsoft.Owin.Hosting;
 using System.Collections.Generic;
+using LP.Helpers;
 
 namespace IxianLitePool
 {
@@ -80,6 +81,7 @@ namespace IxianLitePool
             running = false;
 
             Payment.Instance.stop();
+            IxiPrice.Instance.stop();
 
             // Stop the DLT
             node.stop();

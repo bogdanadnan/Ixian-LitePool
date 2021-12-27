@@ -184,6 +184,7 @@
     <Compile Include="Pool\Controllers\ConfigController.cs" />
     <Compile Include="Pool\Controllers\DashboardController.cs" />
     <Compile Include="Helpers\MemCache.cs" />
+    <Compile Include="Helpers\IxiPrice.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

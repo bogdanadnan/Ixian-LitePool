@@ -90,6 +90,9 @@ export class DashboardComponent implements OnInit{
             document.getElementById("workersCount").innerText = data.Workers.toString();
             document.getElementById("totalPayments").innerText = data.TotalPayments.toFixed(2);
             document.getElementById("poolHashrate").innerText = data.PoolHashrate.toFixed(2);
+            document.getElementById("poolDifficulty").innerText = data.PoolDifficulty.toString();
+            document.getElementById("blocksMined").innerText = data.BlocksMined.toString();
+            document.getElementById("ixiPrice").innerText = data.IxiPrice.toFixed(3);
         });
     }
 }
@@ -101,4 +104,7 @@ class DashboardStatus {
     Workers: number;
     TotalPayments: number;
     PoolHashrate: number;
+    PoolDifficulty: number;
+    BlocksMined: number;
+    IxiPrice: number;
 };

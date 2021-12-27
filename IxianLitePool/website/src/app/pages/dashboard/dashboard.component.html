@@ -11,28 +11,7 @@
                     <div class="col-7 col-md-8">
                         <div class="numbers">
                             <p class="card-category">Network Block Height</p>
-                            <p class="card-title"><span id="networkHeight">0</span>
-                            <p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="col-lg-3 col-md-6 col-sm-6">
-        <div class="card card-stats">
-            <div class="card-body ">
-                <div class="row">
-                    <div class="col-5 col-md-4">
-                        <div class="icon-big text-center icon-warning">
-                            <i class="nc-icon nc-settings-gear-65 text-success"></i>
-                        </div>
-                    </div>
-                    <div class="col-7 col-md-8">
-                        <div class="numbers">
-                            <p class="card-category">Currently Mining Block</p>
-                            <p class="card-title"><span id="miningBlock">0</span>
-                            <p>
+                            <p class="card-title"><span id="networkHeight">0</span></p>
                         </div>
                     </div>
                 </div>
@@ -51,8 +30,7 @@
                     <div class="col-7 col-md-8">
                         <div class="numbers">
                             <p class="card-category">Block Reward</p>
-                            <p class="card-title"><span id="blockReward"></span>IXI
-                            <p>
+                            <p class="card-title"><span id="blockReward"></span>IXI</p>
                         </div>
                     </div>
                 </div>
@@ -65,13 +43,32 @@
                 <div class="row">
                     <div class="col-5 col-md-4">
                         <div class="icon-big text-center icon-warning">
-                            <i class="nc-icon nc-single-02 text-primary"></i>
+                            <i class="nc-icon nc-chart-pie-36 text-warning"></i>
                         </div>
                     </div>
                     <div class="col-7 col-md-8">
                         <div class="numbers">
-                            <p class="card-category">Miners</p>
-                            <p class="card-title"><span id="minersCount">0</span> (<span id="workersCount">0</span> workers)<p>
+                            <p class="card-category">Pool Fee</p>
+                            <p class="card-title"><span id="poolFee"></span>%</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6 col-sm-6">
+        <div class="card card-stats">
+            <div class="card-body ">
+                <div class="row">
+                    <div class="col-5 col-md-4">
+                        <div class="icon-big text-center icon-warning">
+                            <i class="nc-icon nc-time-alarm text-primary"></i>
+                        </div>
+                    </div>
+                    <div class="col-7 col-md-8">
+                        <div class="numbers">
+                            <p class="card-category">Payment Interval</p>
+                            <p class="card-title">1 hour</p>
                         </div>
                     </div>
                 </div>
@@ -86,14 +83,13 @@
                 <div class="row">
                     <div class="col-5 col-md-4">
                         <div class="icon-big text-center icon-warning">
-                            <i class="nc-icon nc-chart-pie-36 text-warning"></i>
+                            <i class="nc-icon nc-settings-gear-65 text-success"></i>
                         </div>
                     </div>
                     <div class="col-7 col-md-8">
                         <div class="numbers">
-                            <p class="card-category">Pool Fee</p>
-                            <p class="card-title"><span id="poolFee"></span>%
-                            <p>
+                            <p class="card-category">Currently Mining Block</p>
+                            <p class="card-title"><span id="miningBlock">0</span></p>
                         </div>
                     </div>
                 </div>
@@ -106,14 +102,91 @@
                 <div class="row">
                     <div class="col-5 col-md-4">
                         <div class="icon-big text-center icon-warning">
-                            <i class="nc-icon nc-time-alarm text-success"></i>
+                            <i class="nc-icon nc-spaceship text-success"></i>
                         </div>
                     </div>
                     <div class="col-7 col-md-8">
                         <div class="numbers">
-                            <p class="card-category">Payment Interval</p>
-                            <p class="card-title">1h
-                            <p>
+                            <p class="card-category">Pool Hashrate</p>
+                            <p class="card-title"><span id="poolHashrate">0</span>khs<p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6 col-sm-6">
+        <div class="card card-stats">
+            <div class="card-body ">
+                <div class="row">
+                    <div class="col-5 col-md-4">
+                        <div class="icon-big text-center icon-warning">
+                            <i class="nc-icon nc-vector text-success"></i>
+                        </div>
+                    </div>
+                    <div class="col-7 col-md-8">
+                        <div class="numbers">
+                            <p class="card-category">Pool Difficulty</p>
+                            <p class="card-title"><span id="poolDifficulty">0</span></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6 col-sm-6">
+        <div class="card card-stats">
+            <div class="card-body ">
+                <div class="row">
+                    <div class="col-5 col-md-4">
+                        <div class="icon-big text-center icon-warning">
+                            <i class="nc-icon nc-app text-success"></i>
+                        </div>
+                    </div>
+                    <div class="col-7 col-md-8">
+                        <div class="numbers">
+                            <p class="card-category">Blocks Mined (24h)</p>
+                            <p class="card-title"><span id="blocksMined">0</span></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="row">
+    <div class="col-lg-3 col-md-6 col-sm-6">
+        <div class="card card-stats">
+            <div class="card-body ">
+                <div class="row">
+                    <div class="col-5 col-md-4">
+                        <div class="icon-big text-center icon-warning">
+                            <i class="nc-icon nc-single-02 text-primary"></i>
+                        </div>
+                    </div>
+                    <div class="col-7 col-md-8">
+                        <div class="numbers">
+                            <p class="card-category">Miners</p>
+                            <p class="card-title"><span id="minersCount">0</span><p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6 col-sm-6">
+        <div class="card card-stats">
+            <div class="card-body ">
+                <div class="row">
+                    <div class="col-5 col-md-4">
+                        <div class="icon-big text-center icon-warning">
+                            <i class="nc-icon nc-settings text-primary"></i>
+                        </div>
+                    </div>
+                    <div class="col-7 col-md-8">
+                        <div class="numbers">
+                            <p class="card-category">Workers</p>
+                            <p class="card-title"><span id="workersCount">0</span><p>
                         </div>
                     </div>
                 </div>
@@ -132,8 +205,7 @@
                     <div class="col-7 col-md-8">
                         <div class="numbers">
                             <p class="card-category">Total Payments</p>
-                            <p class="card-title"><span id="totalPayments">0</span> IXI
-                            <p>
+                            <p class="card-title"><span id="totalPayments">0</span> IXI</p>
                         </div>
                     </div>
                 </div>
@@ -146,13 +218,13 @@
                 <div class="row">
                     <div class="col-5 col-md-4">
                         <div class="icon-big text-center icon-warning">
-                            <i class="nc-icon nc-spaceship text-primary"></i>
+                            <i class="nc-icon nc-cart-simple text-danger"></i>
                         </div>
                     </div>
                     <div class="col-7 col-md-8">
                         <div class="numbers">
-                            <p class="card-category">Pool Hashrate</p>
-                            <p class="card-title"><span id="poolHashrate">0</span>khs<p>
+                            <p class="card-category">1000 IXI Price</p>
+                            <p class="card-title"><span id="ixiPrice">0</span> USD</p>
                         </div>
                     </div>
                 </div>
@@ -195,7 +267,7 @@
                     You can choose most suitable mining software for you below.<br>
                 </p>
 
-                <strong>Pool Address: </strong><span id="poolUrl"></span> 
+                <strong>Pool Address: </strong><span id="poolUrl"></span>
                 <br /><br />
 
                 <h5>IxiMiner - mixed CPU/GPU Miner</h5>
