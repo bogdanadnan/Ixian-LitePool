@@ -20,6 +20,11 @@ namespace IxianLitePool
 
         public void handleCommand(string line)
         {
+            if(string.IsNullOrEmpty(line))
+            {
+                return;
+            }
+
             line = line.Trim();
             int ws_index = line.IndexOf(' ');
             if(ws_index == -1)

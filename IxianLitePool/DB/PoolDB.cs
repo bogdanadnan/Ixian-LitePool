@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using IXICore;
 using SQLite;
 
@@ -135,6 +136,21 @@ namespace LP.DB
 
             public bool verified { get; set; }
         }
+        
+        public class DoubleData
+        {
+            public double value { get; set; }
+        }
+
+        public class IntegerData
+        {
+            public int value { get; set; }
+        }
+
+        public class DecimalData
+        {
+            public decimal value { get; set; }
+        }
 
         private static PoolDB instance = null;
 
@@ -156,6 +172,8 @@ namespace LP.DB
         public PoolDB()
         {
             db = new SQLiteConnection("pool.sqlite", true);
+//            db.Tracer = new Action<string>(q => Console.WriteLine(q));
+//            db.Trace = true;
             initTables();
         }
 
@@ -349,18 +367,22 @@ namespace LP.DB
 
         public void getActiveMinersCount(out int activeMinersCount, out int activeWorkersCount)
         {
-            activeMinersCount = db.ExecuteScalar<int>("SELECT COUNT(id) FROM Miner WHERE lastSeen > ?", DateTime.Now - (new TimeSpan(0, 5, 0)));
-            activeWorkersCount = db.ExecuteScalar<int>("SELECT COUNT(id) FROM Worker WHERE lastSeen > ?", DateTime.Now - (new TimeSpan(0, 5, 0)));
+            var limit = DateTime.Now - (new TimeSpan(0, 5, 0));
+            activeMinersCount = db.Table<MinerDBType>().Count(m => m.lastSeen > limit);
+            activeWorkersCount = db.Table<WorkerDBType>().Count(m => m.lastSeen > limit);
         }
 
         public decimal getTotalPayments()
         {
-            return db.ExecuteScalar<decimal>("SELECT SUM(value) FROM Payment WHERE minerId > -1 AND verified = 1");
+            var result = db.Query<DecimalData>("SELECT SUM(\"value\") AS \"value\" FROM \"Payment\" WHERE \"verified\" = 1").FirstOrDefault();
+            return result != null ? result.value : 0;
         }
 
         public double getTotalHashrate()
         {
-            return db.ExecuteScalar<double>("SELECT SUM(hashrate) FROM Worker WHERE lastSeen > ?", DateTime.Now - (new TimeSpan(0, 5, 0)));
+            var limit = DateTime.Now - (new TimeSpan(0, 5, 0));
+            var result = db.Query<DoubleData>("SELECT SUM(\"hashrate\") AS \"value\" FROM \"Worker\" WHERE \"lastSeen\" > ?", limit).FirstOrDefault();
+            return result != null ? result.value : 0;
         }
     }
 }

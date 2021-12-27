@@ -4,6 +4,7 @@ using System.Linq;
 using System.Collections;
 using System.Threading.Tasks;
 using System.Web.Http;
+using System.Web.Http.Results;
 using LP.Helpers;
 using Microsoft.Extensions.Caching.Memory;
 using IXICore.Meta;
@@ -22,13 +23,13 @@ namespace LP.Pool
 
     public class DashboardController : ApiController
     {
-        public DashboardData Get()
+        public IHttpActionResult Get()
         {
             DashboardData dashboardData = null;
 
             if (MemCache.Instance.TryGetValue("dashboard_data", out dashboardData) && dashboardData != null)
             {
-                return dashboardData;
+                return Json(dashboardData);
             }
 
             var activeBlock = Pool.Instance.getActiveBlock();
@@ -47,7 +48,7 @@ namespace LP.Pool
 
             MemCache.Instance.Set("dashboard_data", dashboardData, new TimeSpan(0, 1, 0));
 
-            return dashboardData;
+            return Json(dashboardData);
         }
     }
 }

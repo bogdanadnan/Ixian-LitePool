@@ -1,7 +1,8 @@
 import { Component, OnInit } from '@angular/core';
+import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import * as moment from "moment";
-//import { Observable } from '@rxjs/Observable';
+import { interval } from 'rxjs';
 import Chart from 'chart.js';
 declare var Config;
 
@@ -13,32 +14,27 @@ declare var Config;
 
 export class DashboardComponent implements OnInit{
 
-  public canvas : any;
+  public canvas: any;
   public ctx;
   public chartColor;
   public chartEmail;
     public chartHours;
 
-    private oneSecondUpdater: any;
     private oneMinuteUpdater: any;
     private tenMinutesUpdater: any;
+
+    constructor(private http: HttpClient) { }
 
     ngOnInit() {
         document.getElementById("poolUrl").innerText = Config.poolUrl;
         document.getElementById("poolFee").innerText = (Config.poolFee * 100).toFixed(2);
         document.getElementById("blockReward").innerText = Config.blockReward.toFixed(2);
 
-//        this.oneSecondUpdater = interval(1000).subscribe(i => {
-//            this.globalStatus.uptime++;
-//            this.globalStatus.uptimeHours = (new Date(this.globalStatus.uptime * 1000)).toISOString().substr(11, 8);
-//        });
-//        this.oneMinuteUpdater = interval(60000).subscribe(i => {
-//            this.updateDashboardData();
-//            this.updateWorkerList();
-//        });
-//        this.tenMinutesUpdater = interval(600000).subscribe(i => {
-//            this.updateWalletData();
-//        });
+        this.oneMinuteUpdater = interval(60000).subscribe(i => {
+            this.updateDashboardData();
+        });
+
+        this.updateDashboardData();
 
       this.chartColor = "#FFFFFF";
 
@@ -85,4 +81,24 @@ export class DashboardComponent implements OnInit{
         options: chartOptions
       });
     }
+
+    public updateDashboardData() {
+        this.http.get("/api/dashboard").subscribe((data: DashboardStatus) => {
+            document.getElementById("networkHeight").innerText = data.NetworkBlockHeight.toString();
+            document.getElementById("miningBlock").innerText = data.ActiveMiningBlock.toString();
+            document.getElementById("minersCount").innerText = data.Miners.toString();
+            document.getElementById("workersCount").innerText = data.Workers.toString();
+            document.getElementById("totalPayments").innerText = data.TotalPayments.toFixed(2);
+            document.getElementById("poolHashrate").innerText = data.PoolHashrate.toFixed(2);
+        });
+    }
 }
+
+class DashboardStatus {
+    NetworkBlockHeight: number;
+    ActiveMiningBlock: number;
+    Miners: number;
+    Workers: number;
+    TotalPayments: number;
+    PoolHashrate: number;
+};
