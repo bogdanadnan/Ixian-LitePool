@@ -10,7 +10,9 @@ export interface RouteInfo {
 
 export const ROUTES: RouteInfo[] = [
     { path: '/dashboard',     title: 'Dashboard',         icon:'nc-bank',       class: '' },
-    { path: '/miners',         title: 'Miners List',        icon:'nc-tile-56',    class: '' },
+    { path: '/miners', title: 'Miners List', icon: 'nc-tile-56', class: '' },
+    { path: '/blocks', title: 'Mined Blocks', icon: 'nc-app', class: '' },
+    { path: '/payments', title: 'Payments', icon: 'nc-money-coins', class: '' },
 ];
 
 @Component({

@@ -1,7 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import * as moment from "moment";
 import { interval } from 'rxjs';
 import Chart from 'chart.js';
 declare var Config;
@@ -21,7 +20,6 @@ export class DashboardComponent implements OnInit{
     public chartHours;
 
     private oneMinuteUpdater: any;
-    private tenMinutesUpdater: any;
 
     constructor(private http: HttpClient) { }
 
@@ -89,6 +87,7 @@ export class DashboardComponent implements OnInit{
             document.getElementById("minersCount").innerText = data.Miners.toString();
             document.getElementById("workersCount").innerText = data.Workers.toString();
             document.getElementById("totalPayments").innerText = data.TotalPayments.toFixed(2);
+            document.getElementById("totalPending").innerText = data.TotalPending.toFixed(2);
             document.getElementById("poolHashrate").innerText = data.PoolHashrate.toFixed(2);
             document.getElementById("poolDifficulty").innerText = data.PoolDifficulty.toString();
             document.getElementById("blocksMined").innerText = data.BlocksMined.toString();
@@ -97,12 +96,13 @@ export class DashboardComponent implements OnInit{
     }
 }
 
-class DashboardStatus {
+interface DashboardStatus {
     NetworkBlockHeight: number;
     ActiveMiningBlock: number;
     Miners: number;
     Workers: number;
     TotalPayments: number;
+    TotalPending: number;
     PoolHashrate: number;
     PoolDifficulty: number;
     BlocksMined: number;

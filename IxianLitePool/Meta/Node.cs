@@ -890,11 +890,16 @@ namespace LP.Meta
 
         public override IxiNumber getWalletBalance(byte[] id)
         {
-            // TODO Properly implement this for multiple addresses
+            if(id.Length == 0)
+            {
+                return getBalance().balance;
+            }
+
             if (balance.address != null && id.SequenceEqual(balance.address))
             {
                 return balance.balance;
             }
+
             return 0;
         }
 

@@ -6,7 +6,9 @@ import { FormsModule } from '@angular/forms';
 import { AdminLayoutRoutes } from './admin-layout.routing';
 
 import { DashboardComponent }       from '../../pages/dashboard/dashboard.component';
-import { MinersComponent }           from '../../pages/miners/miners.component';
+import { MinersComponent } from '../../pages/miners/miners.component';
+import { BlocksComponent } from '../../pages/blocks/blocks.component';
+import { PaymentsComponent } from '../../pages/payments/payments.component';
 
 import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
 
@@ -18,8 +20,10 @@ import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
     NgbModule
   ],
   declarations: [
-    DashboardComponent,
-    MinersComponent,
+      DashboardComponent,
+      MinersComponent,
+      BlocksComponent,
+      PaymentsComponent
   ]
 })
 

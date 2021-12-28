@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using LP.DB;
 using LP.Meta;
 using LP.Network;
@@ -156,6 +157,11 @@ namespace LP.Pool
         public static int getBlocksMinedInLast24h()
         {
             return PoolDB.Instance.getBlocksMinedSince(DateTime.Now - (new TimeSpan(24, 0, 0)));
+        }
+
+        public static List<BlockData> getMinedBlocks()
+        {
+            return PoolDB.Instance.getMinedBlocks();
         }
     }
 }

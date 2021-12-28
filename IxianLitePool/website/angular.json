@@ -26,9 +26,13 @@
             "styles": [
               "node_modules/bootstrap/scss/bootstrap.scss",
               "src/assets/scss/paper-dashboard.scss",
-              "node_modules/ngx-toastr/toastr.css"
+              "node_modules/ngx-toastr/toastr.css",
+              "node_modules/datatables.net-dt/css/jquery.dataTables.css"
             ],
-            "scripts": [],
+            "scripts": [
+              "node_modules/jquery/dist/jquery.min.js",
+              "node_modules/datatables.net/js/jquery.dataTables.min.js"
+            ],
             "aot": false,
             "vendorChunk": true,
             "extractLicenses": false,

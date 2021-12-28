@@ -1,0 +1,42 @@
+﻿<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table" id="blocksTable">
+                        <thead>
+                        <th>
+                            #
+                        </th>
+                        <th>
+                            Block Number
+                        </th>
+                        <th>
+                            Date/Time
+                        </th>
+                        <th>
+                            Reward (IXI)
+                        </th>
+                        <th>
+                            Status
+                        </th>
+                        <th>
+                            Miner
+                        </th>
+                        </thead>
+                        <tbody>
+                            <tr *ngFor="let block of blocksData; let i = index">
+                                <td> {{i + 1}}</td>
+                                <td> {{ block.BlockNum }}</td>
+                                <td> {{ block.TimeStamp }}</td>
+                                <td> {{ block.Reward }}</td>
+                                <td> {{ block.Status }}</td>
+                                <td> {{ block.Miner }}</td>
+                            <tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

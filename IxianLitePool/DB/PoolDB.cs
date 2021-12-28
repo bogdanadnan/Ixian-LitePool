@@ -54,6 +54,7 @@ namespace LP.DB
 
             public DateTime timeStamp { get; set; }
 
+            [Indexed]
             public long blockNum { get; set; }
 
             public long difficulty { get; set; }
@@ -61,6 +62,7 @@ namespace LP.DB
             [Indexed]
             public string nonce { get; set; }
 
+            [Indexed]
             public bool blockResolved { get; set; }
 
             [Indexed]
@@ -150,6 +152,33 @@ namespace LP.DB
         public class DecimalData
         {
             public decimal value { get; set; }
+        }
+
+        public class MinerData
+        {
+            public string Address { get; set; }
+            public DateTime LastSeen { get; set; }
+            public int RoundShares { get; set; }
+            public decimal Pending { get; set; }
+            public double HashRate { get; set; }
+        }
+
+        public class BlockData
+        {
+            public long BlockNum { get; set; }
+            public DateTime TimeStamp { get; set; }
+            public decimal Reward { get; set; }
+            public string Status { get; set; }
+            public string MinerAddress { get; set; }
+        }
+
+        public class PaymentData
+        {
+            public string MinerAddress { get; set; }
+            public DateTime TimeStamp { get; set; }
+            public decimal Value { get; set; }
+            public string Status { get; set; }
+            public string TxId { get; set; }
         }
 
         private static PoolDB instance = null;
@@ -389,6 +418,38 @@ namespace LP.DB
         {
             var result = db.Query<IntegerData>("SELECT COUNT(\"blockNum\") AS \"value\" FROM \"PoolBlock\" WHERE \"miningStart\" > ? AND \"resolution\" = 2", since).FirstOrDefault();
             return result != null ? result.value : 0;
+        }
+
+        public List<MinerData> getMinersDataForLast(int hours)
+        {
+            var limit = DateTime.Now - (new TimeSpan(hours, 0, 0));
+            return db.Query<MinerData>(@"SELECT Miner.address AS Address, Miner.lastSeen AS LastSeen, Miner.pending AS Pending, 
+                (SELECT SUM(Worker.hashrate) FROM Worker WHERE Worker.minerId = Miner.id) AS HashRate,
+                (SELECT COUNT(Share.id) FROM Share WHERE Share.minerId = Miner.Id AND Share.processed = 0) AS RoundShares
+                FROM Miner
+                WHERE Miner.lastSeen > ?
+                ORDER BY Miner.lastSeen DESC", limit).ToList();
+        }
+
+        public List<BlockData> getMinedBlocks()
+        {
+            return db.Query<BlockData>(@"SELECT PoolBlock.blockNum AS BlockNum, PoolBlock.miningEnd AS TimeStamp, PowData.reward AS Reward,
+                    IIF(PowData.id IS NULL, 'Unconfirmed', 'Confirmed') AS Status, Miner.address AS MinerAddress
+                FROM PoolBlock
+            	    LEFT JOIN PowData ON PowData.solvedBlock = PoolBlock.blockNum
+	                LEFT JOIN Share ON Share.blockNum = PoolBlock.blockNum AND Share.blockResolved = 1
+	                LEFT JOIN Miner ON Miner.id = Share.minerId
+	            WHERE PoolBlock.resolution = 2
+	            ORDER BY PoolBlock.miningEnd DESC").ToList();
+        }
+
+        public List<PaymentData> getPayments()
+        {
+            return db.Query<PaymentData>(@"SELECT IIF(Payment.minerId = -1, 'Pool Fee', Miner.address) AS MinerAddress, Payment.timeStamp AS TimeStamp, Payment.value AS Value, 
+        	    	Payment.txId AS TxId, IIF(Payment.verified = 1, 'Verified', 'Pending') AS Status
+                FROM Payment
+		            LEFT JOIN Miner ON Miner.id = Payment.minerId
+                ORDER BY Payment.timeStamp DESC").ToList();
         }
     }
 }

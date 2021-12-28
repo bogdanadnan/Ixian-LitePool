@@ -1,0 +1,38 @@
+﻿<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table" id="paymentsTable">
+                        <thead>
+                        <th>
+                            #
+                        </th>
+                        <th>
+                            Miner
+                        </th>
+                        <th>
+                            Date/Time
+                        </th>
+                        <th>
+                            Value (IXI)
+                        </th>
+                        <th>
+                            Status
+                        </th>
+                        </thead>
+                        <tbody>
+                            <tr *ngFor="let payment of paymentsData; let i = index">
+                                <td> {{i + 1}}</td>
+                                <td> <a href="https://explorer.ixian.io/index.php?p=transaction&id={{ payment.TxId}}" title="{{ payment.TxId }}" target="_blank">{{ payment.Miner }}</a></td>
+                                <td> {{ payment.TimeStamp }}</td>
+                                <td> {{ payment.Value }}</td>
+                                <td> {{ payment.Status }}</td>
+                            <tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

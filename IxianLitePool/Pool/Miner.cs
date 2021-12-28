@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using LP.DB;
+using static LP.DB.PoolDB;
 
 namespace LP.Pool
 {
@@ -103,6 +104,11 @@ namespace LP.Pool
         public static void getActiveMinersCount(out int activeMinersCount, out int activeWorkersCount)
         {
             PoolDB.Instance.getActiveMinersCount(out activeMinersCount, out activeWorkersCount);
+        }
+
+        public static List<MinerData> get24HMiners()
+        {
+            return PoolDB.Instance.getMinersDataForLast(24);
         }
     }
 }

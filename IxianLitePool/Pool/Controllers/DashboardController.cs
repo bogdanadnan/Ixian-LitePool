@@ -19,6 +19,7 @@ namespace LP.Pool
         public int Miners { get; set; }
         public int Workers { get; set; }
         public decimal TotalPayments { get; set; }
+        public decimal TotalPending { get; set; }
         public int PoolHashrate { get; set; }
         public ulong PoolDifficulty { get; set; }
         public int BlocksMined { get; set; }
@@ -47,6 +48,7 @@ namespace LP.Pool
                 Miners = activeMinersCount,
                 Workers = activeWorkersCount,
                 TotalPayments = Payment.getTotalPayments(),
+                TotalPending = (decimal)IxianHandler.getWalletBalance(new byte[0]).getAmount() / 100000000,
                 PoolHashrate = Pool.getTotalHashrate(),
                 PoolDifficulty = Pool.Instance.getDifficulty(),
                 BlocksMined = Pool.getBlocksMinedInLast24h(),

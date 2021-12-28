@@ -62,23 +62,8 @@
       <HintPath>packages\FluentCommandLineParser.1.5.0.20-commands\lib\net35\FluentCommandLineParser.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Newtonsoft.Json, Version=12.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
-      <HintPath>packages\Newtonsoft.Json.12.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
-    </Reference>
     <Reference Include="Open.Nat, Version=1.0.0.0, Culture=neutral, PublicKeyToken=f22a6a4582336c76, processorArchitecture=MSIL">
       <HintPath>packages\Open.NAT.2.1.0.0\lib\net45\Open.Nat.dll</HintPath>
-    </Reference>
-    <Reference Include="SQLite-net, Version=1.6.292.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>packages\sqlite-net-pcl.1.6.292\lib\netstandard1.1\SQLite-net.dll</HintPath>
-    </Reference>
-    <Reference Include="SQLitePCLRaw.batteries_green, Version=1.1.14.520, Culture=neutral, PublicKeyToken=a84b7dcfb1391f7f, processorArchitecture=MSIL">
-      <HintPath>packages\SQLitePCLRaw.bundle_green.1.1.14\lib\net45\SQLitePCLRaw.batteries_green.dll</HintPath>
-    </Reference>
-    <Reference Include="SQLitePCLRaw.batteries_v2, Version=1.1.14.520, Culture=neutral, PublicKeyToken=8226ea5df37bcae9, processorArchitecture=MSIL">
-      <HintPath>packages\SQLitePCLRaw.bundle_green.1.1.14\lib\net45\SQLitePCLRaw.batteries_v2.dll</HintPath>
-    </Reference>
-    <Reference Include="SQLitePCLRaw.core, Version=1.1.14.520, Culture=neutral, PublicKeyToken=1488e028ca7ab535, processorArchitecture=MSIL">
-      <HintPath>packages\SQLitePCLRaw.core.1.1.14\lib\net45\SQLitePCLRaw.core.dll</HintPath>
     </Reference>
     <Reference Include="SQLitePCLRaw.provider.e_sqlite3, Version=1.1.14.520, Culture=neutral, PublicKeyToken=9c301db686d0bd12, processorArchitecture=MSIL">
       <HintPath>packages\SQLitePCLRaw.provider.e_sqlite3.net45.1.1.14\lib\net45\SQLitePCLRaw.provider.e_sqlite3.dll</HintPath>
@@ -166,6 +151,24 @@
     <Reference Include="Microsoft.Extensions.Caching.Memory">
       <HintPath>packages\Microsoft.Extensions.Caching.Memory.6.0.0\lib\net461\Microsoft.Extensions.Caching.Memory.dll</HintPath>
     </Reference>
+    <Reference Include="SQLitePCLRaw.core">
+      <HintPath>packages\SQLitePCLRaw.core.2.0.7\lib\netstandard2.0\SQLitePCLRaw.core.dll</HintPath>
+    </Reference>
+    <Reference Include="SQLitePCLRaw.provider.dynamic_cdecl">
+      <HintPath>packages\SQLitePCLRaw.provider.dynamic_cdecl.2.0.7\lib\netstandard2.0\SQLitePCLRaw.provider.dynamic_cdecl.dll</HintPath>
+    </Reference>
+    <Reference Include="SQLitePCLRaw.batteries_v2">
+      <HintPath>packages\SQLitePCLRaw.bundle_green.2.0.7\lib\net461\SQLitePCLRaw.batteries_v2.dll</HintPath>
+    </Reference>
+    <Reference Include="SQLitePCLRaw.nativelibrary">
+      <HintPath>packages\SQLitePCLRaw.bundle_green.2.0.7\lib\net461\SQLitePCLRaw.nativelibrary.dll</HintPath>
+    </Reference>
+    <Reference Include="SQLite-net">
+      <HintPath>packages\sqlite-net-pcl.1.8.116\lib\netstandard2.0\SQLite-net.dll</HintPath>
+    </Reference>
+    <Reference Include="Newtonsoft.Json">
+      <HintPath>packages\Newtonsoft.Json.13.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Commands\Commands.cs" />
@@ -185,6 +188,9 @@
     <Compile Include="Pool\Controllers\DashboardController.cs" />
     <Compile Include="Helpers\MemCache.cs" />
     <Compile Include="Helpers\IxiPrice.cs" />
+    <Compile Include="Pool\Controllers\MinersController.cs" />
+    <Compile Include="Pool\Controllers\BlocksController.cs" />
+    <Compile Include="Pool\Controllers\PaymentsController.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
@@ -301,6 +307,10 @@
     <None Include="website\src\assets\fonts\nucleo-icons.woff" />
     <None Include="website\src\assets\img\favicon.ico" />
     <None Include="website\src\assets\img\ixian_icon.png" />
+    <None Include="website\src\app\pages\blocks\blocks.component.html" />
+    <None Include="website\src\app\pages\blocks\blocks.component.ts" />
+    <None Include="website\src\app\pages\payments\payments.component.html" />
+    <None Include="website\src\app\pages\payments\payments.component.ts" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Pool\" />
@@ -310,6 +320,8 @@
     </Content>
     <Folder Include="Pool\Controllers\" />
     <Folder Include="Helpers\" />
+    <Folder Include="website\src\app\pages\blocks\" />
+    <Folder Include="website\src\app\pages\payments\" />
   </ItemGroup>
   <Import Project="..\..\Ixian-Core\IXICore.projitems" Label="Shared" />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
@@ -325,4 +337,5 @@
   <Import Project="packages\SQLitePCLRaw.lib.e_sqlite3.osx.1.1.14\build\net35\SQLitePCLRaw.lib.e_sqlite3.osx.targets" Condition="Exists('packages\SQLitePCLRaw.lib.e_sqlite3.osx.1.1.14\build\net35\SQLitePCLRaw.lib.e_sqlite3.osx.targets')" />
   <Import Project="packages\SQLitePCLRaw.lib.e_sqlite3.v110_xp.1.1.14\build\net35\SQLitePCLRaw.lib.e_sqlite3.v110_xp.targets" Condition="Exists('packages\SQLitePCLRaw.lib.e_sqlite3.v110_xp.1.1.14\build\net35\SQLitePCLRaw.lib.e_sqlite3.v110_xp.targets')" />
   <Import Project="packages\Microsoft.Extensions.Logging.Abstractions.6.0.0\build\Microsoft.Extensions.Logging.Abstractions.targets" Condition="Exists('packages\Microsoft.Extensions.Logging.Abstractions.6.0.0\build\Microsoft.Extensions.Logging.Abstractions.targets')" />
+  <Import Project="packages\SQLitePCLRaw.lib.e_sqlite3.2.0.7\build\net461\SQLitePCLRaw.lib.e_sqlite3.targets" Condition="Exists('packages\SQLitePCLRaw.lib.e_sqlite3.2.0.7\build\net461\SQLitePCLRaw.lib.e_sqlite3.targets')" />
 </Project>

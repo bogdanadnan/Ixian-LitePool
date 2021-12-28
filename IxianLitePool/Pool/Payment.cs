@@ -26,8 +26,9 @@ namespace LP.Pool
 
         private Thread paymentProcessorThread = null;
         private bool paymentProcessorRunning = false;
+        private DateTime lastUpdatePendingTimeStamp = DateTime.Now;
+        private DateTime lastPaymentTimeStamp = DateTime.Now;
         private Node node = null;
-        private DateTime lastPaymentTimeStamp;
         private List<PaymentDBType> unverifiedPayments = new List<PaymentDBType>();
 
         public Payment()
@@ -41,7 +42,6 @@ namespace LP.Pool
             if (paymentProcessorThread == null && !paymentProcessorRunning)
             {
                 paymentProcessorRunning = true;
-                lastPaymentTimeStamp = DateTime.Now;
                 paymentProcessorThread = new Thread(paymentProcessor);
                 paymentProcessorThread.Start();
             }
@@ -58,20 +58,25 @@ namespace LP.Pool
 
         private void paymentProcessor()
         {
-            while(paymentProcessorRunning)
+            while (paymentProcessorRunning)
             {
                 Thread.Sleep(1000);
 
                 if(DateTime.Now.Minute == 0 && (DateTime.Now - lastPaymentTimeStamp).TotalMinutes > 2)
                 {
                     processPayments();
-                    lastPaymentTimeStamp = DateTime.Now;
+                }
+
+                if((DateTime.Now - lastUpdatePendingTimeStamp).TotalSeconds > 60)
+                {
+                    updatePendingPayments();
                 }
             }
         }
 
         public void updatePendingPayments()
         {
+            lastUpdatePendingTimeStamp = DateTime.Now;
             List<ShareDBType> shares = PoolDB.Instance.getUnprocessedShares();
             List<MinerDBType> miners = PoolDB.Instance.getMiners(shares.Select(shr => shr.minerId).Distinct().ToList());
             Dictionary<int, List<ShareDBType>> sharesByMiner = shares.Where(shr => miners.Any(m => m.id == shr.minerId))
@@ -94,6 +99,7 @@ namespace LP.Pool
 
         public void processPayments()
         {
+            lastPaymentTimeStamp = DateTime.Now;
             List<ShareDBType> shares = PoolDB.Instance.getUnprocessedShares();
             List<MinerDBType> miners = PoolDB.Instance.getMiners(shares.Select(shr => shr.minerId).Distinct().ToList());
             Dictionary<int, List<ShareDBType>> sharesByMiner = shares.Where(shr => miners.Any(m => m.id == shr.minerId))
@@ -203,6 +209,11 @@ namespace LP.Pool
         public static decimal getTotalPayments()
         {
             return PoolDB.Instance.getTotalPayments();
+        }
+
+        public static List<PaymentData> getPayments()
+        {
+            return PoolDB.Instance.getPayments();
         }
     }
 }
