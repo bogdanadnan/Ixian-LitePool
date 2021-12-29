@@ -28,6 +28,15 @@ export class PaymentsComponent implements OnInit {
     public updatePaymentsData() {
         this.http.get("/api/payments").subscribe((data: PaymentData[]) => {
             this.paymentsData = data;
+            setTimeout(() => {
+                $('#paymentsTable').DataTable().destroy();
+                $('#paymentsTable').DataTable({
+                    pagingType: 'full_numbers',
+                    pageLength: 10,
+                    processing: true,
+                    lengthMenu: [5, 10, 25]
+                });
+            }, 0);
         });
     }
 }

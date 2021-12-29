@@ -4,6 +4,7 @@ import { RouterModule } from '@angular/router';
 import { ToastrModule } from "ngx-toastr";
 
 import { HttpClientModule } from '@angular/common/http';
+import { DataTablesModule } from 'angular-datatables';
 
 import { SidebarModule } from './sidebar/sidebar.module';
 import { FooterModule } from './shared/footer/footer.module';
@@ -23,6 +24,7 @@ import { AdminLayoutComponent } from './layouts/admin-layout/admin-layout.compon
   imports: [
       BrowserAnimationsModule,
       HttpClientModule,
+      DataTablesModule,
     RouterModule.forRoot(AppRoutes,{
     useHash: true,
     relativeLinkResolution: 'legacy'

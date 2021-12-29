@@ -5,24 +5,26 @@
                 <div class="table-responsive">
                     <table class="table" id="blocksTable">
                         <thead>
-                        <th>
-                            #
-                        </th>
-                        <th>
-                            Block Number
-                        </th>
-                        <th>
-                            Date/Time
-                        </th>
-                        <th>
-                            Reward (IXI)
-                        </th>
-                        <th>
-                            Status
-                        </th>
-                        <th>
-                            Miner
-                        </th>
+                            <tr>
+                                <th>
+                                    #
+                                </th>
+                                <th>
+                                    Block Number
+                                </th>
+                                <th>
+                                    Date/Time
+                                </th>
+                                <th>
+                                    Reward (IXI)
+                                </th>
+                                <th>
+                                    Status
+                                </th>
+                                <th>
+                                    Miner
+                                </th>
+                            </tr>
                         </thead>
                         <tbody>
                             <tr *ngFor="let block of blocksData; let i = index">
@@ -32,7 +34,7 @@
                                 <td> {{ block.Reward }}</td>
                                 <td> {{ block.Status }}</td>
                                 <td> {{ block.Miner }}</td>
-                            <tr>
+                            </tr>
                         </tbody>
                     </table>
                 </div>

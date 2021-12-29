@@ -80,6 +80,10 @@ export class DashboardComponent implements OnInit{
       });
     }
 
+    public ngOnDestroy() {
+        this.oneMinuteUpdater.unsubscribe();
+    }
+
     public updateDashboardData() {
         this.http.get("/api/dashboard").subscribe((data: DashboardStatus) => {
             document.getElementById("networkHeight").innerText = data.NetworkBlockHeight.toString();

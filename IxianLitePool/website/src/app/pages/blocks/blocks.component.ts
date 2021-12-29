@@ -28,6 +28,15 @@ export class BlocksComponent implements OnInit {
     public updateBlocksData() {
         this.http.get("/api/blocks").subscribe((data: BlockData[]) => {
             this.blocksData = data;
+            setTimeout(() => {
+                $('#blocksTable').DataTable().destroy();
+                $('#blocksTable').DataTable({
+                    pagingType: 'full_numbers',
+                    pageLength: 10,
+                    processing: true,
+                    lengthMenu: [5, 10, 25]
+                });
+            }, 0);
         });
     }
 }

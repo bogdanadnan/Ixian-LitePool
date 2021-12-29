@@ -5,24 +5,26 @@
         <div class="table-responsive">
             <table class="table" id="minersTable">
                 <thead>
-                    <th>
-                        #
-                    </th>
-                    <th>
-                        Address
-                    </th>
-                    <th>
-                        HashRate (kH/s)
-                    </th>
-                    <th>
-                        Pending (IXI)
-                    </th>
-                    <th>
-                        Round Shares
-                    </th>
-                    <th>
-                        Last Seen
-                    </th>
+                    <tr>
+                        <th>
+                            #
+                        </th>
+                        <th>
+                            Address
+                        </th>
+                        <th>
+                            HashRate (kH/s)
+                        </th>
+                        <th>
+                            Pending (IXI)
+                        </th>
+                        <th>
+                            Round Shares
+                        </th>
+                        <th>
+                            Last Seen
+                        </th>
+                    </tr>
                 </thead>
                 <tbody>
                     <tr *ngFor="let miner of minersData; let i = index">
@@ -32,7 +34,7 @@
                         <td> {{ miner.Pending }}</td>
                         <td> {{ miner.RoundShares }}</td>
                         <td> {{ miner.LastSeen }}</td>
-                    <tr>
+                    </tr>
                 </tbody>
             </table>
         </div>

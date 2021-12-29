@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using IXICore;
+using IXICore.Meta;
 using SQLite;
 
 namespace LP.DB
@@ -433,14 +434,16 @@ namespace LP.DB
 
         public List<BlockData> getMinedBlocks()
         {
-            return db.Query<BlockData>(@"SELECT PoolBlock.blockNum AS BlockNum, PoolBlock.miningEnd AS TimeStamp, PowData.reward AS Reward,
+            var address = new Address(IxianHandler.getWalletStorage().getPrimaryAddress()).ToString();
+
+            return db.Query<BlockData>(@"SELECT DISTINCT PoolBlock.blockNum AS BlockNum, PoolBlock.miningEnd AS TimeStamp, PowData.reward AS Reward,
                     IIF(PowData.id IS NULL, 'Unconfirmed', 'Confirmed') AS Status, Miner.address AS MinerAddress
                 FROM PoolBlock
-            	    LEFT JOIN PowData ON PowData.solvedBlock = PoolBlock.blockNum
+            	    LEFT JOIN PowData ON PowData.solvedBlock = PoolBlock.blockNum AND PowData.solverAddress = ?
 	                LEFT JOIN Share ON Share.blockNum = PoolBlock.blockNum AND Share.blockResolved = 1
 	                LEFT JOIN Miner ON Miner.id = Share.minerId
 	            WHERE PoolBlock.resolution = 2
-	            ORDER BY PoolBlock.miningEnd DESC").ToList();
+	            ORDER BY PoolBlock.miningEnd DESC", address).ToList();
         }
 
         public List<PaymentData> getPayments()

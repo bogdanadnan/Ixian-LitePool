@@ -87,13 +87,10 @@ namespace LP.Pool
             var balance = ((decimal)node.getBalance().balance.getAmount()) / 100000000;
             balance -= (balance * (decimal)Config.poolFee);
 
-            if(balance > 100) // safety net to avoid running this too many times if some balance remains in the wallet
+            foreach (var miner in sharesByMiner)
             {
-                foreach (var miner in sharesByMiner)
-                {
-                    decimal pendingValue = balance * miner.Value.Count / shareCount;
-                    PoolDB.Instance.updateMinerPendingBalance(miner.Key, pendingValue);
-                }
+                decimal pendingValue = balance * miner.Value.Count / shareCount;
+                PoolDB.Instance.updateMinerPendingBalance(miner.Key, pendingValue);
             }
         }
 
@@ -152,7 +149,6 @@ namespace LP.Pool
                         }
                         minerShare.Value.ForEach(shr => shr.processed = true);
                         PoolDB.Instance.updateShares(minerShare.Value);
-                        PoolDB.Instance.updateMinerPendingBalance(miner.id, 0);
                     }
                 }
 

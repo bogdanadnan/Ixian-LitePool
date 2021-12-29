@@ -80,14 +80,14 @@ namespace LP.Pool
 
         public void updateSharesPerSecond(int shrrt)
         {
-            if(shrrt < Config.targetSharesPerSecond - 1)
+            if(shrrt < (Config.targetSharesPerSecond - 1))
             {
                 if (adjustedDifficulty > 1000)
                 {
                     adjustedDifficulty -= 1000;
                 }
             }
-            else if(shrrt > Config.targetSharesPerSecond + 1)
+            else if(shrrt > (Config.targetSharesPerSecond + 1))
             {
                 adjustedDifficulty += 1000;
             }

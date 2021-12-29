@@ -28,6 +28,15 @@ export class MinersComponent implements OnInit{
     public updateMinersData() {
         this.http.get("/api/miners").subscribe((data: MinerData[]) => {
             this.minersData = data;
+            setTimeout(() => {
+                $('#minersTable').DataTable().destroy();
+                $('#minersTable').DataTable({
+                    pagingType: 'full_numbers',
+                    pageLength: 10,
+                    processing: true,
+                    lengthMenu: [5, 10, 25]
+                });
+            }, 0);
         });
     }
 }
