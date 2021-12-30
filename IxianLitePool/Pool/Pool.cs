@@ -73,6 +73,15 @@ namespace LP.Pool
 
         private ulong adjustedDifficulty = Config.startingDifficulty;
 
+        public Pool()
+        {
+            var diff = State.Instance.get("PoolDifficulty");
+            if(!ulong.TryParse(diff, out adjustedDifficulty) || adjustedDifficulty == 0)
+            {
+                adjustedDifficulty = Config.startingDifficulty;
+            }
+        }
+
         public ulong getDifficulty()
         {
             return adjustedDifficulty;
@@ -85,11 +94,13 @@ namespace LP.Pool
                 if (adjustedDifficulty > 1000)
                 {
                     adjustedDifficulty -= 1000;
+                    State.Instance.set("PoolDifficulty", adjustedDifficulty.ToString());
                 }
             }
             else if(shrrt > (Config.targetSharesPerSecond + 1))
             {
                 adjustedDifficulty += 1000;
+                State.Instance.set("PoolDifficulty", adjustedDifficulty.ToString());
             }
         }
 

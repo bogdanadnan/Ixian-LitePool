@@ -97,6 +97,17 @@ namespace LP.Pool
         public void processPayments()
         {
             lastPaymentTimeStamp = DateTime.Now;
+
+            ulong lastPaymentHeight;
+            var lastPaymentHeightStr = State.Instance.get("LastPaymentHeight");
+            if(ulong.TryParse(lastPaymentHeightStr, out lastPaymentHeight) && lastPaymentHeight > 0)
+            {
+                if(node.getHighestKnownNetworkBlockHeight() - lastPaymentHeight < 10)
+                {
+                    return;
+                }
+            }
+
             List<ShareDBType> shares = PoolDB.Instance.getUnprocessedShares();
             List<MinerDBType> miners = PoolDB.Instance.getMiners(shares.Select(shr => shr.minerId).Distinct().ToList());
             Dictionary<int, List<ShareDBType>> sharesByMiner = shares.Where(shr => miners.Any(m => m.id == shr.minerId))
@@ -182,6 +193,8 @@ namespace LP.Pool
                         }
                     }
                 }
+
+                State.Instance.set("LastPaymentHeight", node.getHighestKnownNetworkBlockHeight().ToString());
             }
         }
 

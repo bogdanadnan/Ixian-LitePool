@@ -139,7 +139,19 @@ namespace LP.DB
 
             public bool verified { get; set; }
         }
-        
+
+        [Table("PoolState")]
+        public class PoolStateDBType
+        {
+            [PrimaryKey, AutoIncrement]
+            public int id { get; set; }
+
+            [Indexed]
+            public string key { get; set; }
+
+            public string value { get; set; }
+        }
+
         public class DoubleData
         {
             public double value { get; set; }
@@ -218,6 +230,7 @@ namespace LP.DB
                 db.CreateTable(typeof(PoolBlockDBType));
                 db.CreateTable(typeof(PowDataDBType));
                 db.CreateTable(typeof(PaymentDBType));
+                db.CreateTable(typeof(PoolStateDBType));
             }
             catch(Exception ex)
             {
@@ -453,6 +466,39 @@ namespace LP.DB
                 FROM Payment
 		            LEFT JOIN Miner ON Miner.id = Payment.minerId
                 ORDER BY Payment.timeStamp DESC").ToList();
+        }
+
+        public List<PoolStateDBType> getAllPoolStates()
+        {
+            return db.Table<PoolStateDBType>().ToList();
+        }
+
+        public int setPoolState(string key, string value)
+        {
+            var entry = db.Table<PoolStateDBType>().Where(ps => ps.key == key).FirstOrDefault();
+            if(entry != null)
+            {
+                entry.value = value;
+                db.Update(entry);
+                return entry.id;
+            }
+            else
+            {
+                int recs = db.Insert(new PoolStateDBType
+                {
+                    key = key,
+                    value = value
+                });
+
+                if (recs == 0)
+                {
+                    return -1;
+                }
+                else
+                {
+                    return (int)SQLite3.LastInsertRowid(db.Handle);
+                }
+            }
         }
     }
 }
