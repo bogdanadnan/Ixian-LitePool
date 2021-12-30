@@ -9,6 +9,7 @@ import { DashboardComponent }       from '../../pages/dashboard/dashboard.compon
 import { MinersComponent } from '../../pages/miners/miners.component';
 import { BlocksComponent } from '../../pages/blocks/blocks.component';
 import { PaymentsComponent } from '../../pages/payments/payments.component';
+import { MinerComponent } from '../../pages/miner/miner.component';
 
 import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
 
@@ -23,7 +24,8 @@ import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
       DashboardComponent,
       MinersComponent,
       BlocksComponent,
-      PaymentsComponent
+      PaymentsComponent,
+      MinerComponent
   ]
 })
 

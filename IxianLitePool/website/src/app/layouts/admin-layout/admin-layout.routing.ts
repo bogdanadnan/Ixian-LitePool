@@ -4,10 +4,12 @@ import { DashboardComponent } from '../../pages/dashboard/dashboard.component';
 import { MinersComponent } from '../../pages/miners/miners.component';
 import { BlocksComponent } from '../../pages/blocks/blocks.component';
 import { PaymentsComponent } from '../../pages/payments/payments.component';
+import { MinerComponent } from '../../pages/miner/miner.component';
 
 export const AdminLayoutRoutes: Routes = [
-    { path: 'dashboard',      component: DashboardComponent },
+    { path: 'dashboard', component: DashboardComponent },
     { path: 'miners', component: MinersComponent },
     { path: 'blocks', component: BlocksComponent },
-    { path: 'payments', component: PaymentsComponent }
+    { path: 'payments', component: PaymentsComponent },
+    { path: 'miner', component: MinerComponent },
 ];

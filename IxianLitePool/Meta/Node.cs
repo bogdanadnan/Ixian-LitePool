@@ -56,7 +56,7 @@ namespace LP.Meta
         private const uint blockRequestTimeout = 30;
         private const uint maxRetryCount = 10;
         private const uint activeBlockExpirationInMinutes = 10;
-        private static long maxBlocksInMemory = (long)ConsensusConfig.getRedactedWindowSize() - 110;
+        private static long maxBlocksInMemory = (long)ConsensusConfig.getRedactedWindowSize(Block.maxVersion) - 110;
 
         private Thread updater = null;
         private bool updaterRunning = false;
@@ -564,6 +564,22 @@ namespace LP.Meta
                     });
                 }
                 networkBlockHeight = block_num;
+            }
+        }
+
+        public void requestBlock(ulong block_num)
+        {
+            lock (requestsQueue)
+            {
+                var blk = getBlock(block_num);
+                if (blk == null)
+                {
+                    requestsQueue.Add(block_num, new RequestData()
+                    {
+                        timeStamp = DateTime.Now,
+                        blockNum = block_num
+                    });
+                }
             }
         }
 

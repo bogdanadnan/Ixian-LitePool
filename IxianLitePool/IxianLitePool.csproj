@@ -311,6 +311,8 @@
     <None Include="website\src\app\pages\blocks\blocks.component.ts" />
     <None Include="website\src\app\pages\payments\payments.component.html" />
     <None Include="website\src\app\pages\payments\payments.component.ts" />
+    <None Include="website\src\app\pages\miner\miner.component.html" />
+    <None Include="website\src\app\pages\miner\miner.component.ts" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Pool\" />
@@ -322,6 +324,7 @@
     <Folder Include="Helpers\" />
     <Folder Include="website\src\app\pages\blocks\" />
     <Folder Include="website\src\app\pages\payments\" />
+    <Folder Include="website\src\app\pages\miner\" />
   </ItemGroup>
   <Import Project="..\..\Ixian-Core\IXICore.projitems" Label="Shared" />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

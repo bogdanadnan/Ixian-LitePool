@@ -42,7 +42,10 @@ export class NavbarComponent implements OnInit{
           if(this.listTitles[item].path === titlee){
               return this.listTitles[item].title;
           }
-      }
+        }
+        if (titlee.startsWith("miner?")) {
+            return "Account: test";
+        }
       return 'Dashboard';
     }
     sidebarToggle() {

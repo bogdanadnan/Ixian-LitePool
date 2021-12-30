@@ -79,7 +79,32 @@ namespace IxianLitePool
                     handleBlock(line);
                     break;
 
+                case "getblock":
+                    handleGetBlock(line);
+                    break;
+
             }
+        }
+
+        private void handleGetBlock(string line)
+        {
+            string[] split = line.Split(new string[] { " " }, StringSplitOptions.None);
+            if (split.Count() < 2)
+            {
+                Console.WriteLine("Incorrect parameters for getblock. Should be block number.\n");
+                return;
+            }
+
+            ulong blockNum = 0;
+            if (!ulong.TryParse(split[1], out blockNum))
+            {
+                Console.WriteLine("Incorrect parameters for getblock. BlockNum is not a number.\n");
+                return;
+            }
+
+            Console.WriteLine("Requesting block number {0} from network", blockNum);
+
+            node.requestBlock(blockNum);
         }
 
         void handleBlock(string line)
