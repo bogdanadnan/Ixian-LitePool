@@ -39,8 +39,8 @@ export class MinerComponent implements OnInit {
     private address: String;
     private initialized: boolean;
     private oneMinuteUpdater: any;
-    private workerData: MinerWorkerInfo[];
-    private paymentData: MinerPaymentInfo[];
+    public workerData: MinerWorkerInfo[];
+    public paymentData: MinerPaymentInfo[];
 
     constructor(private http: HttpClient, private route: ActivatedRoute) { }
 
