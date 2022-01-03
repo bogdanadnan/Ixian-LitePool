@@ -128,7 +128,7 @@ namespace LP.Meta
                     (DateTime.Now - (activePoolBlock.miningStart.HasValue ? activePoolBlock.miningStart.Value : DateTime.Now)).Minutes > activeBlockExpirationInMinutes)
                 {
                     Console.WriteLine("Active mining block {0} timed out without resolution, resetting.", activePoolBlock.blockNum);
-                    Pool.Pool.Instance.resetActiveBlock(MiningBlockResolution.TimedOut);
+                    Pool.Pool.Instance.resetActiveBlock(MiningBlockResolution.TimedOut, activePoolBlock.blockNum);
                 }
 
 
@@ -724,12 +724,12 @@ namespace LP.Meta
                             if (solver.solverAddress == (new Address(IxianHandler.getWalletStorage().getPrimaryAddress())).ToString())
                             {
                                 Console.WriteLine("Block that was currently mined has already been resolved by this pool, resetting active mining block");
-                                Pool.Pool.Instance.resetActiveBlock(MiningBlockResolution.SolvedByPool);
+                                Pool.Pool.Instance.resetActiveBlock(MiningBlockResolution.SolvedByPool, minedBlockNum);
                             }
                             else
                             {
                                 Console.WriteLine("Block that was currently mined has already been resolved by someone else, resetting active mining block");
-                                Pool.Pool.Instance.resetActiveBlock(MiningBlockResolution.SolveByOther);
+                                Pool.Pool.Instance.resetActiveBlock(MiningBlockResolution.SolveByOther, minedBlockNum);
                             }
                         }
                     }
@@ -742,7 +742,7 @@ namespace LP.Meta
                         if (activePoolBlock != null && activePoolBlock.blockNum == toRemove)
                         {
                             Console.WriteLine("Block that was currently mined is older than allowed, resetting active mining block");
-                            Pool.Pool.Instance.resetActiveBlock(MiningBlockResolution.EvictedFromRedactedWindow);
+                            Pool.Pool.Instance.resetActiveBlock(MiningBlockResolution.EvictedFromRedactedWindow, toRemove);
                         }
 
                         blockRepository.Remove(toRemove);
@@ -861,12 +861,12 @@ namespace LP.Meta
                         if ((new Address(tx.pubKey)).ToString() == localAddress)
                         {
                             Console.WriteLine("Block that was currently mined has already been resolved by this pool, resetting active mining block");
-                            Pool.Pool.Instance.resetActiveBlock(MiningBlockResolution.SolvedByPool);
+                            Pool.Pool.Instance.resetActiveBlock(MiningBlockResolution.SolvedByPool, minedBlockNum);
                         }
                         else
                         {
                             Console.WriteLine("Block that was currently mined has already been resolved by someone else, resetting active mining block");
-                            Pool.Pool.Instance.resetActiveBlock(MiningBlockResolution.SolveByOther);
+                            Pool.Pool.Instance.resetActiveBlock(MiningBlockResolution.SolveByOther, minedBlockNum);
                         }
                     }
                 }
@@ -881,7 +881,7 @@ namespace LP.Meta
                     if (activePoolBlock != null && activePoolBlock.blockNum == toRemove)
                     {
                         Console.WriteLine("Block that was currently mined is older than allowed, resetting active mining block");
-                        Pool.Pool.Instance.resetActiveBlock(MiningBlockResolution.EvictedFromRedactedWindow);
+                        Pool.Pool.Instance.resetActiveBlock(MiningBlockResolution.EvictedFromRedactedWindow, toRemove);
                     }
 
                     blockRepository.Remove(toRemove);
@@ -1210,13 +1210,15 @@ namespace LP.Meta
                 }
             }
 
-            var activePoolBlock = Pool.Pool.Instance.getActiveBlock();
             lock (knownSolvedBlocks)
             {
-                knownSolvedBlocks.Add(activePoolBlock.blockNum, new List<BlockSolver>());
+                if (!knownSolvedBlocks.ContainsKey(blocknum))
+                {
+                    knownSolvedBlocks.Add(blocknum, new List<BlockSolver>());
+                }
             }
 
-            Pool.Pool.Instance.resetActiveBlock(MiningBlockResolution.SolvedByPool);
+            Pool.Pool.Instance.resetActiveBlock(MiningBlockResolution.SolvedByPool, blocknum);
 
             Transaction transaction = new Transaction((int) Transaction.Type.PoWSolution, new IxiNumber(0),
                 new IxiNumber(0), ConsensusConfig.ixianInfiniMineAddress, from, data, pubkey,

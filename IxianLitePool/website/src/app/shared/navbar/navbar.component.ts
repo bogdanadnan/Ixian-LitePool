@@ -19,7 +19,7 @@ export class NavbarComponent implements OnInit{
     public isCollapsed = true;
     @ViewChild("navbar-cmp", {static: false}) button;
 
-    constructor(location:Location, private renderer : Renderer2, private element : ElementRef, private router: Router) {
+    constructor(location: Location, private renderer: Renderer2, private element: ElementRef, private router: Router) {
         this.location = location;
         this.nativeElement = element.nativeElement;
         this.sidebarVisible = false;
@@ -33,20 +33,24 @@ export class NavbarComponent implements OnInit{
           this.sidebarClose();
        });
     }
-    getTitle(){
-      var titlee = this.location.prepareExternalUrl(this.location.path());
-      if(titlee.charAt(0) === '#'){
-          titlee = titlee.slice( 1 );
-      }
-      for(var item = 0; item < this.listTitles.length; item++){
-          if(this.listTitles[item].path === titlee){
-              return this.listTitles[item].title;
-          }
+    getTitle() {
+        var titlee = this.location.prepareExternalUrl(this.location.path());
+        if (titlee.charAt(0) === '#') {
+            titlee = titlee.slice(1);
         }
-        if (titlee.startsWith("miner?")) {
-            return "Account: test";
+        for (var item = 0; item < this.listTitles.length; item++) {
+            if (this.listTitles[item].path === titlee) {
+                return this.listTitles[item].title;
+            }
         }
-      return 'Dashboard';
+        if (titlee.startsWith("/miner/")) {
+            var address = titlee.slice(7);
+            return "Account: " + address;
+        }
+        return 'Dashboard';
+    }
+    searchMiner(value: String) {
+        this.router.navigateByUrl('/miner/' + value);
     }
     sidebarToggle() {
         if (this.sidebarVisible === false) {

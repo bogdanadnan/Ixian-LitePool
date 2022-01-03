@@ -5,6 +5,14 @@ using static LP.DB.PoolDB;
 
 namespace LP.Pool
 {
+    public class MinerDashboardInformation
+    {
+        public int Workers { get; set; }
+        public double Hashrate { get; set; }
+        public decimal Pending { get; set; }
+        public decimal Payments { get; set; }
+    };
+
     public class Miner
     {
         PoolDB.MinerDBType minerDB = null;
@@ -109,6 +117,33 @@ namespace LP.Pool
         public static List<MinerData> get24HMiners()
         {
             return PoolDB.Instance.getMinersDataForLast(24);
+        }
+
+        public static MinerDashboardInformation getMinerInformation(string address)
+        {
+            return new MinerDashboardInformation
+            {
+                Hashrate = PoolDB.Instance.getMinerHashrate(address),
+                Workers = PoolDB.Instance.getMinerWorkersCount(address),
+                Payments = PoolDB.Instance.getMinerTotalPayments(address),
+                Pending = PoolDB.Instance.getMinerPendingValue(address)
+            };
+        }
+
+        public static List<MinerWorker> getMinerWorkersInformation(string address)
+        {
+            return PoolDB.Instance.getMinerWorkersInformation(address);
+        }
+
+        public static List<MinerPayment> getMinerPaymentsInformation(string address)
+        {
+            return PoolDB.Instance.getMinerPaymentsInformation(address);
+        }
+
+        public static bool checkAddress(string address)
+        {
+            var miner = PoolDB.Instance.getMiner(address);
+            return miner != null;
         }
     }
 }

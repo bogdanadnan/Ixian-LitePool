@@ -83,6 +83,8 @@ namespace LP.Pool
                 .GroupBy(sh => sh.minerId).ToDictionary(k => k.Key, v => v.ToList());
             int shareCount = 0;
             sharesByMiner.Values.ToList().ForEach(shrList => shareCount += shrList.Count);
+            List<MinerDBType> minersWithPendingBalance = PoolDB.Instance.getMinersWithPendingBalance();
+            List<MinerDBType> minersWithPendingBalanceAndNoShares = minersWithPendingBalance.Where(m => !sharesByMiner.ContainsKey(m.id)).ToList();
 
             var balance = ((decimal)node.getBalance().balance.getAmount()) / 100000000;
             balance -= (balance * (decimal)Config.poolFee);
@@ -91,6 +93,11 @@ namespace LP.Pool
             {
                 decimal pendingValue = balance * miner.Value.Count / shareCount;
                 PoolDB.Instance.updateMinerPendingBalance(miner.Key, pendingValue);
+            }
+
+            foreach(var miner in minersWithPendingBalanceAndNoShares)
+            {
+                PoolDB.Instance.updateMinerPendingBalance(miner.id, 0);
             }
         }
 

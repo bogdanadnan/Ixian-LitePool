@@ -14,16 +14,11 @@ namespace LP.Pool
         public void Configuration(IAppBuilder appBuilder)
         {
             HttpConfiguration config = new HttpConfiguration();
+            config.MapHttpAttributeRoutes();
             config.Routes.MapHttpRoute(
-                name: "createUserApi",
-                routeTemplate: "api/{controller}/{id}",
-                defaults: new { id = RouteParameter.Optional }
+                name: "default",
+                routeTemplate: "api/{controller}"
                 );
-            config.Routes.MapHttpRoute(
-                name: "Config",
-                routeTemplate: "api/config",
-                defaults: new { controller = "config" }
-            );
 
             appBuilder.UseWebApi(config);
 

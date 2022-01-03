@@ -373,12 +373,13 @@ namespace LP.Network
                 }
                 else
                 {
-                    shareCount++;
-                    if ((DateTime.Now - shareCountTimeStamp).TotalSeconds > 10)
+                    double interval = (DateTime.Now - shareCountTimeStamp).TotalSeconds;
+                    double shares = (++shareCount);
+                    if (interval > 10)
                     {
-                        Pool.Pool.Instance.updateSharesPerSecond((int)((double)shareCount / (double)((DateTime.Now - shareCountTimeStamp).TotalSeconds)));
-                        shareCount = 0;
+                        Pool.Pool.Instance.updateSharesPerSecond((int)(shares / interval));
                         shareCountTimeStamp = DateTime.Now;
+                        shareCount = 0;
                     }
                 }
 

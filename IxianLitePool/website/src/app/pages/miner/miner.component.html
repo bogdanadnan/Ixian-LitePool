@@ -1,1 +1,184 @@
-﻿<div></div>
+﻿<div id="validInfo" class="d-none">
+    <div class="row">
+        <div class="col-lg-3 col-md-6 col-sm-6">
+            <div class="card card-stats">
+                <div class="card-body ">
+                    <div class="row">
+                        <div class="col-5 col-md-4">
+                            <div class="icon-big text-center icon-warning">
+                                <i class="nc-icon nc-single-02 text-primary"></i>
+                            </div>
+                        </div>
+                        <div class="col-7 col-md-8">
+                            <div class="numbers">
+                                <p class="card-category">Workers</p>
+                                <p class="card-title"><span id="workersCount">0</span><p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 col-sm-6">
+            <div class="card card-stats">
+                <div class="card-body ">
+                    <div class="row">
+                        <div class="col-5 col-md-4">
+                            <div class="icon-big text-center icon-warning">
+                                <i class="nc-icon nc-spaceship text-danger"></i>
+                            </div>
+                        </div>
+                        <div class="col-7 col-md-8">
+                            <div class="numbers">
+                                <p class="card-category">Total Hashrate</p>
+                                <p class="card-title"><span id="hashrate">0</span></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 col-sm-6">
+            <div class="card card-stats">
+                <div class="card-body ">
+                    <div class="row">
+                        <div class="col-5 col-md-4">
+                            <div class="icon-big text-center icon-warning">
+                                <i class="nc-icon nc-money-coins text-primary"></i>
+                            </div>
+                        </div>
+                        <div class="col-7 col-md-8">
+                            <div class="numbers">
+                                <p class="card-category">Pending</p>
+                                <p class="card-title"><span id="pending">0</span><p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 col-sm-6">
+            <div class="card card-stats">
+                <div class="card-body ">
+                    <div class="row">
+                        <div class="col-5 col-md-4">
+                            <div class="icon-big text-center icon-warning">
+                                <i class="nc-icon nc-money-coins text-danger"></i>
+                            </div>
+                        </div>
+                        <div class="col-7 col-md-8">
+                            <div class="numbers">
+                                <p class="card-category">Total Payments</p>
+                                <p class="card-title"><span id="payments">0</span> IXI</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card card-nav-tabs">
+                <div class="card-header card-header-danger">
+                    <!-- colors: "header-primary", "header-info", "header-success", "header-warning", "header-danger" -->
+                    <div class="nav-tabs-navigation">
+                        <div class="nav-tabs-wrapper">
+                            <ul class="nav nav-tabs" data-tabs="tabs">
+                                <li class="nav-item">
+                                    <a class="nav-link active" id="workersLink" [routerLink]="" (click)="activateTab('workers')" data-toggle="tab">Workers</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" id="paymentsLink" [routerLink]="" (click)="activateTab('payments')" data-toggle="tab">Payments</a>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body ">
+                    <div class="tab-content text-justify">
+                        <div class="tab-pane active" id="workersTab">
+                            <div class="table-responsive">
+                                <table class="table" id="workersTable">
+                                    <thead>
+                                        <tr>
+                                            <th>
+                                                #
+                                            </th>
+                                            <th>
+                                                Name
+                                            </th>
+                                            <th>
+                                                HashRate (kH/s)
+                                            </th>
+                                            <th>
+                                                Round Shares
+                                            </th>
+                                            <th>
+                                                Last Seen
+                                            </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr *ngFor="let worker of workerData; let i = index">
+                                            <td> {{i + 1}}</td>
+                                            <td> {{ worker.Name }}</td>
+                                            <td> {{ worker.Hashrate }}</td>
+                                            <td> {{ worker.Shares }}</td>
+                                            <td> {{ worker.LastSeen }}</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="tab-pane" id="paymentsTab">
+                            <div class="table-responsive">
+                                <table class="table" id="paymentsTable">
+                                    <thead>
+                                        <tr>
+                                            <th>
+                                                #
+                                            </th>
+                                            <th>
+                                                Transaction
+                                            </th>
+                                            <th>
+                                                Date/Time
+                                            </th>
+                                            <th>
+                                                Value (IXI)
+                                            </th>
+                                            <th>
+                                                Status
+                                            </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr *ngFor="let payment of paymentData; let i = index">
+                                            <td> {{i + 1}}</td>
+                                            <td> <a href="https://explorer.ixian.io/index.php?p=transaction&id={{ payment.TxId}}" title="{{ payment.TxId }}" target="_blank">{{ payment.TxId }}</a></td>
+                                            <td> {{ payment.TimeStamp }}</td>
+                                            <td> {{ payment.Value }}</td>
+                                            <td> {{ payment.Status }}</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div id="invalidInfo" class="d-none">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-body ">
+                    <p>This wallet is not valid or has not been seen on this pool.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

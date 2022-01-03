@@ -20,6 +20,7 @@ namespace LP.DB
 
             public DateTime lastSeen { get; set; }
 
+            [Indexed]
             public decimal pending { get; set; }
         }
 
@@ -194,6 +195,22 @@ namespace LP.DB
             public string TxId { get; set; }
         }
 
+        public class MinerWorker
+        {
+            public string Name { get; set; }
+            public double Hashrate { get; set; }
+            public int Shares { get; set; }
+            public DateTime LastSeen { get; set; }
+        }
+
+        public class MinerPayment
+        {
+            public string TxId { get; set; }
+            public DateTime TimeStamp { get; set; }
+            public decimal Value { get; set; }
+            public string Status { get; set; }
+        }
+
         private static PoolDB instance = null;
 
         public static PoolDB Instance
@@ -254,7 +271,7 @@ namespace LP.DB
                 }
                 else
                 {
-                    return (int)SQLite3.LastInsertRowid(db.Handle);
+                    return miner.id > 0 ? miner.id : (int)SQLite3.LastInsertRowid(db.Handle);
                 }
             }
             else
@@ -280,7 +297,7 @@ namespace LP.DB
                 }
                 else
                 {
-                    return (int)SQLite3.LastInsertRowid(db.Handle);
+                    return worker.id > 0 ? worker.id : (int)SQLite3.LastInsertRowid(db.Handle);
                 }
             }
             else
@@ -299,7 +316,7 @@ namespace LP.DB
             }
             else
             {
-                return (int)SQLite3.LastInsertRowid(db.Handle);
+                return share.id > 0 ? share.id : (int)SQLite3.LastInsertRowid(db.Handle);
             }
         }
 
@@ -376,7 +393,10 @@ namespace LP.DB
 
         public void updateShares(List<ShareDBType> shares)
         {
-            db.UpdateAll(shares);
+            foreach (var shr in shares)
+            {
+                db.Update(shr);
+            }
         }
 
         public int addPayment(PaymentDBType payment)
@@ -388,7 +408,7 @@ namespace LP.DB
             }
             else
             {
-                return (int)SQLite3.LastInsertRowid(db.Handle);
+                return payment.id > 0 ? payment.id : (int)SQLite3.LastInsertRowid(db.Handle);
             }
         }
 
@@ -436,13 +456,15 @@ namespace LP.DB
 
         public List<MinerData> getMinersDataForLast(int hours)
         {
-            var limit = DateTime.Now - (new TimeSpan(hours, 0, 0));
+            var limitMiner = DateTime.Now - (new TimeSpan(hours, 0, 0));
+            var limitWorker = DateTime.Now - (new TimeSpan(0, 5, 0));
+
             return db.Query<MinerData>(@"SELECT Miner.address AS Address, Miner.lastSeen AS LastSeen, Miner.pending AS Pending, 
-                (SELECT SUM(Worker.hashrate) FROM Worker WHERE Worker.minerId = Miner.id) AS HashRate,
+                (SELECT SUM(Worker.hashrate) FROM Worker WHERE Worker.minerId = Miner.id AND Worker.lastSeen > ?) AS HashRate,
                 (SELECT COUNT(Share.id) FROM Share WHERE Share.minerId = Miner.Id AND Share.processed = 0) AS RoundShares
                 FROM Miner
                 WHERE Miner.lastSeen > ?
-                ORDER BY Miner.lastSeen DESC", limit).ToList();
+                ORDER BY Miner.lastSeen DESC", limitWorker, limitMiner).ToList();
         }
 
         public List<BlockData> getMinedBlocks()
@@ -454,6 +476,7 @@ namespace LP.DB
                 FROM PoolBlock
             	    LEFT JOIN PowData ON PowData.solvedBlock = PoolBlock.blockNum AND PowData.solverAddress = ?
 	                LEFT JOIN Share ON Share.blockNum = PoolBlock.blockNum AND Share.blockResolved = 1
+                        AND Share.timeStamp = (SELECT MIN(Share.timeStamp) FROM Share WHERE Share.blockNum = PoolBlock.blockNum AND Share.blockResolved = 1)
 	                LEFT JOIN Miner ON Miner.id = Share.minerId
 	            WHERE PoolBlock.resolution = 2
 	            ORDER BY PoolBlock.miningEnd DESC", address).ToList();
@@ -484,11 +507,14 @@ namespace LP.DB
             }
             else
             {
-                int recs = db.Insert(new PoolStateDBType
+                entry = new PoolStateDBType
                 {
+                    id = -1,
                     key = key,
                     value = value
-                });
+                };
+
+                int recs = db.Insert(entry);
 
                 if (recs == 0)
                 {
@@ -496,9 +522,67 @@ namespace LP.DB
                 }
                 else
                 {
-                    return (int)SQLite3.LastInsertRowid(db.Handle);
+                    return entry.id > 0 ? entry.id : (int)SQLite3.LastInsertRowid(db.Handle);
                 }
             }
+        }
+
+        public double getMinerHashrate(string address)
+        {
+            var limit = DateTime.Now - (new TimeSpan(0, 5, 0));
+            var result = db.Query<DoubleData>(@"SELECT SUM(Worker.hashrate) AS value 
+                                                    FROM Worker
+                                                        JOIN Miner ON Worker.minerId = Miner.id AND Miner.address = ?
+                                                     WHERE Worker.lastSeen > ?", address, limit).FirstOrDefault();
+            return result != null ? result.value : 0;
+        }
+
+        public int getMinerWorkersCount(string address)
+        {
+            var limit = DateTime.Now - (new TimeSpan(0, 5, 0));
+            var result = db.Query<IntegerData>(@"SELECT COUNT(Worker.id) AS value 
+                                                    FROM Worker
+                                                        JOIN Miner ON Worker.minerId = Miner.id AND Miner.address = ?
+                                                     WHERE Worker.lastSeen > ?", address, limit).FirstOrDefault();
+            return result != null ? result.value : 0;
+        }
+
+        public decimal getMinerTotalPayments(string address)
+        {
+            var result = db.Query<DecimalData>(@"SELECT SUM(Payment.value) AS value 
+                                                    FROM Payment
+                                                        JOIN Miner ON Payment.minerId = Miner.id AND Miner.address = ?", address).FirstOrDefault();
+            return result != null ? result.value : 0;
+        }
+
+        public decimal getMinerPendingValue(string address)
+        {
+            var miner = db.Table<MinerDBType>().Where(m => m.address == address).FirstOrDefault();
+            return miner != null ? miner.pending : 0;
+        }
+
+        public List<MinerWorker> getMinerWorkersInformation(string address)
+        {
+            var limit = DateTime.Now - (new TimeSpan(0, 5, 0));
+
+            return db.Query<MinerWorker>(@"SELECT Worker.name AS Name, Worker.hashrate AS Hashrate,
+                (SELECT COUNT(Share.id) FROM Share WHERE Share.workerId == Worker.id AND Share.processed = 0) AS Shares, Worker.lastSeen AS LastSeen
+                    FROM Worker
+                        JOIN Miner ON Miner.id = Worker.minerId AND Miner.address = ?
+                 WHERE Worker.lastSeen > ? ORDER BY Worker.lastSeen DESC", address, limit).ToList();
+        }
+
+        public List<MinerPayment> getMinerPaymentsInformation(string address)
+        {
+            return db.Query<MinerPayment>(@"SELECT Payment.txId AS TxId, Payment.timeStamp AS TimeStamp, Payment.value AS Value, IIF(Payment.verified = 1, 'Verified', 'Pending') AS Status
+                                            FROM Payment
+                                                JOIN Miner ON Payment.minerId = Miner.id AND Miner.address = ?
+                                            ORDER BY Payment.timeStamp DESC", address).ToList();
+        }
+
+        public List<MinerDBType> getMinersWithPendingBalance()
+        {
+            return db.Table<MinerDBType>().Where(m => m.pending > 0).ToList();
         }
     }
 }

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Web.Http;
+using LP.Helpers;
 using static LP.DB.PoolDB;
 
 namespace LP.Pool
@@ -14,16 +15,11 @@ namespace LP.Pool
             return Json(data.ConvertAll(m => new
             {
                 Miner = m.MinerAddress,
-                TimeStamp = processDateTime(m.TimeStamp),
+                TimeStamp = Utils.processDateTime(m.TimeStamp),
                 Value = m.Value.ToString("F"),
                 Status = m.Status,
                 TxId = m.TxId
             }));
-        }
-
-        private string processDateTime(DateTime dt)
-        {
-            return dt.ToString("G");
         }
     }
 }

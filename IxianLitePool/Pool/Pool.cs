@@ -104,22 +104,29 @@ namespace LP.Pool
             }
         }
 
-        public void resetActiveBlock(MiningBlockResolution resolution)
+        public void resetActiveBlock(MiningBlockResolution resolution, ulong targetBlockNum)
         {
             lock(activePoolBlockLock)
             {
-                if (activePoolBlock != null)
+                PoolBlockDBType blk = PoolDB.Instance.getPoolBlock((long)targetBlockNum);
+
+                if (blk != null)
                 {
-                    PoolBlockDBType blk = PoolDB.Instance.getPoolBlock((long)activePoolBlock.blockNum);
-                    if(blk != null)
+                    blk.resolution = Math.Max(blk.resolution, (int)resolution);
+
+                    if (activePoolBlock != null && activePoolBlock.blockNum == targetBlockNum)
                     {
                         blk.miningEnd = DateTime.Now;
-                        blk.resolution = (int)resolution;
-                        PoolDB.Instance.updatePoolBlock(blk);
                     }
+
+                    PoolDB.Instance.updatePoolBlock(blk);
                 }
-                activePoolBlock = null;
-                APIServer.Instance.resetCache();
+
+                if (activePoolBlock != null && activePoolBlock.blockNum == targetBlockNum)
+                {
+                    activePoolBlock = null;
+                    APIServer.Instance.resetCache();
+                }
             }
         }
 

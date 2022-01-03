@@ -192,6 +192,8 @@
     <Compile Include="Pool\Controllers\BlocksController.cs" />
     <Compile Include="Pool\Controllers\PaymentsController.cs" />
     <Compile Include="Pool\State.cs" />
+    <Compile Include="Pool\Controllers\MinerController.cs" />
+    <Compile Include="Helpers\Utils.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

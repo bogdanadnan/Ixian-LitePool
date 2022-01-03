@@ -29,7 +29,7 @@
                 <tbody>
                     <tr *ngFor="let miner of minersData; let i = index">
                         <td> {{i + 1}}</td>
-                        <td> {{ miner.Address }}</td>
+                        <td> <a href="#" [routerLink]="['/miner',  miner.Address ]">{{ miner.Address }}</a></td>
                         <td> {{ miner.HashRate }}</td>
                         <td> {{ miner.Pending }}</td>
                         <td> {{ miner.RoundShares }}</td>

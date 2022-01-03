@@ -11,5 +11,5 @@ export const AdminLayoutRoutes: Routes = [
     { path: 'miners', component: MinersComponent },
     { path: 'blocks', component: BlocksComponent },
     { path: 'payments', component: PaymentsComponent },
-    { path: 'miner', component: MinerComponent },
+    { path: 'miner/:address', component: MinerComponent },
 ];
