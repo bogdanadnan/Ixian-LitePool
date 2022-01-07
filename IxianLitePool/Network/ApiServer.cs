@@ -475,6 +475,13 @@ namespace LP.Network
                 miner.addShare(blocknum, nonce, difficulty, verify_result);
                 miner.commit();
             }
+            else
+            {
+                lock (clientCallErrors)
+                {
+                    clientCallErrors[wallet].Add(DateTime.Now);
+                }
+            }
 
             // Solution is valid, try to submit it to network
             if (verify_result)
@@ -486,11 +493,6 @@ namespace LP.Network
             }
             else
             {
-                lock (clientCallErrors)
-                {
-                    clientCallErrors[wallet].Add(DateTime.Now);
-                }
-
                 Logging.warn("Miner share {0} REJECTED.", nonce);
             }
 
