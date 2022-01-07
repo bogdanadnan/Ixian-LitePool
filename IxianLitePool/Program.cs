@@ -27,6 +27,11 @@ namespace IxianLitePool
 
             string domainAddress = String.Format("http://*:{0}/", Config.poolPort);
 
+            if (!Config.init(args))
+            {
+                return;
+            }
+
             using (WebApp.Start(url: domainAddress))
             {
                 if(!onStart(args))
@@ -42,11 +47,6 @@ namespace IxianLitePool
         static bool onStart(string[] args)
         {
             running = true;
-
-            if(!Config.init(args))
-            {
-                return false;
-            }
 
             // Initialize the node
             node = new Node();
