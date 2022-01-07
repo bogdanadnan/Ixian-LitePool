@@ -25,12 +25,12 @@ namespace IxianLitePool
         {
             Console.WriteLine("Ixian Lite Pool {0} ({1})", Config.version, CoreConfig.version);
 
-            string domainAddress = String.Format("http://*:{0}/", Config.poolPort);
-
             if (!Config.init(args))
             {
                 return;
             }
+
+            string domainAddress = String.Format("http://*:{0}/", Config.poolPort);
 
             using (WebApp.Start(url: domainAddress))
             {
