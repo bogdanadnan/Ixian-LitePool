@@ -104,6 +104,7 @@ namespace LP.Pool
         public void processPayments()
         {
             lastPaymentTimeStamp = DateTime.Now;
+            string paymentSession = Guid.NewGuid().ToString();
 
             ulong lastPaymentHeight;
             var lastPaymentHeightStr = State.Instance.get("LastPaymentHeight");
@@ -115,7 +116,7 @@ namespace LP.Pool
                 }
             }
 
-            List<ShareDBType> shares = PoolDB.Instance.getUnprocessedShares();
+            List<ShareDBType> shares = PoolDB.Instance.getUnprocessedShares(paymentSession);
             List<MinerDBType> miners = PoolDB.Instance.getMiners(shares.Select(shr => shr.minerId).Distinct().ToList());
             Dictionary<int, List<ShareDBType>> sharesByMiner = shares.Where(shr => miners.Any(m => m.id == shr.minerId))
                 .GroupBy(sh => sh.minerId).ToDictionary(k => k.Key, v => v.ToList());
@@ -153,7 +154,8 @@ namespace LP.Pool
                                 value = ((decimal)pendingValue.getAmount()) / 100000000,
                                 fee = ((decimal)fee.getAmount()) / 100000000,
                                 timeStamp = DateTime.Now,
-                                verified = false
+                                verified = false,
+                                paymentSession = paymentSession
                             };
 
                             payment.id = PoolDB.Instance.addPayment(payment);
@@ -165,8 +167,6 @@ namespace LP.Pool
                                 }
                             }
                         }
-                        minerShare.Value.ForEach(shr => shr.processed = true);
-                        PoolDB.Instance.updateShares(minerShare.Value);
                     }
                 }
 
@@ -187,7 +187,8 @@ namespace LP.Pool
                             value = ((decimal)pendingValue.getAmount()) / 100000000,
                             fee = ((decimal)fee.getAmount()) / 100000000,
                             timeStamp = DateTime.Now,
-                            verified = false
+                            verified = false,
+                            paymentSession = paymentSession
                         };
 
                         payment.id = PoolDB.Instance.addPayment(payment);
@@ -202,6 +203,8 @@ namespace LP.Pool
                 }
 
                 State.Instance.set("LastPaymentHeight", node.getHighestKnownNetworkBlockHeight().ToString());
+
+                PoolDB.Instance.cleanUpShares();
             }
         }
 

@@ -2,7 +2,9 @@
 using IXICore.Meta;
 using IXICore.Network;
 using IXICore.Utils;
+using LP.DB;
 using LP.Meta;
+using LP.Network;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -83,7 +85,39 @@ namespace IxianLitePool
                     handleGetBlock(line);
                     break;
 
+                case "lockapi":
+                    APIServer.Instance.lockServer() ;
+                    Console.WriteLine("API server in lockdown mode.");
+                    break;
+
+                case "unlockapi":
+                    APIServer.Instance.unlockServer();
+                    Console.WriteLine("API server online.");
+                    break;
+
+                case "cleanupdb":
+                    handleCleanUpDB();
+                    break;
+
+                case "pausesync":
+                    node.pauseSync();
+                    Console.WriteLine("Sync process paused.");
+                    break;
+
+                case "resumesync":
+                    node.resumeSync();
+                    Console.WriteLine("Sync process resumed.");
+                    break;
             }
+        }
+
+        private void handleCleanUpDB()
+        {
+            Console.WriteLine("Removing old blocks from storage...");
+            BlockStorage.Instance.cleanUpBlocks(IxianHandler.getHighestKnownNetworkBlockHeight() - ConsensusConfig.getRedactedWindowSize(Block.maxVersion));
+            Console.WriteLine("Removing old shares from storage...");
+            PoolDB.Instance.cleanUpShares();
+            Console.WriteLine("Cleanup complete.");
         }
 
         private void handleGetBlock(string line)

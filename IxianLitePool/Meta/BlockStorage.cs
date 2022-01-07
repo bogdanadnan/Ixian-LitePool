@@ -83,5 +83,10 @@ namespace LP.Meta
                 txId = pow.txId
             }));
         }
+
+        public void cleanUpBlocks(ulong limit)
+        {
+            PoolDB.Instance.cleanUpBlocks((long)limit);
+        }
     }
 }

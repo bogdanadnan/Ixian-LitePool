@@ -80,6 +80,8 @@ namespace IxianLitePool
         {
             running = false;
 
+            api.stop();
+
             Payment.Instance.stop();
             IxiPrice.Instance.stop();
 

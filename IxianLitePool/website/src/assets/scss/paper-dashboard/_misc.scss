@@ -148,3 +148,8 @@ a[data-toggle="collapse"][aria-expanded="true"] .caret,
     }
   }
 }
+
+.nav-link {
+    color: $primary-color;
+    cursor: pointer;
+}

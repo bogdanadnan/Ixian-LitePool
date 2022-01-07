@@ -69,6 +69,9 @@ namespace LP.DB
 
             [Indexed]
             public bool processed { get; set; }
+
+            [Indexed]
+            public string paymentSession { get; set; }
         }
 
         [Table("Block")]
@@ -139,6 +142,8 @@ namespace LP.DB
             public string txId { get; set; }
 
             public bool verified { get; set; }
+
+            public string paymentSession { get; set; }
         }
 
         [Table("PoolState")]
@@ -367,6 +372,23 @@ namespace LP.DB
             return db.Table<ShareDBType>().Where(shr => shr.processed == false).ToList();
         }
 
+        public List<ShareDBType> getUnprocessedShares(string paymentSession)
+        {
+            db.Execute("UPDATE Share SET paymentSession = ?, processed = 1 WHERE processed = 0", paymentSession);
+            return db.Table<ShareDBType>().Where(shr => shr.paymentSession == paymentSession).ToList();
+        }
+
+        public void cleanUpShares()
+        {
+            var limit = DateTime.Now - TimeSpan.FromDays(1);
+            db.Execute("DELETE FROM Share WHERE processed = 1 AND blockResolved = 0 AND timeStamp < ?", limit);
+        }
+
+        public void cleanUpBlocks(long blockLimit)
+        {
+            db.Execute("DELETE FROM Block WHERE blockNum < ?", blockLimit);
+        }
+
         public void updateMinerPendingBalance(int minerId, decimal pending)
         {
             var miner = db.Table<MinerDBType>().FirstOrDefault(m => m.id == minerId);
@@ -389,14 +411,6 @@ namespace LP.DB
                 }
             }
             return miners;
-        }
-
-        public void updateShares(List<ShareDBType> shares)
-        {
-            foreach (var shr in shares)
-            {
-                db.Update(shr);
-            }
         }
 
         public int addPayment(PaymentDBType payment)
@@ -464,7 +478,7 @@ namespace LP.DB
                 (SELECT COUNT(Share.id) FROM Share WHERE Share.minerId = Miner.Id AND Share.processed = 0) AS RoundShares
                 FROM Miner
                 WHERE Miner.lastSeen > ?
-                ORDER BY Miner.lastSeen DESC", limitWorker, limitMiner).ToList();
+                ORDER BY HashRate DESC, Miner.lastSeen DESC", limitWorker, limitMiner).ToList();
         }
 
         public List<BlockData> getMinedBlocks()

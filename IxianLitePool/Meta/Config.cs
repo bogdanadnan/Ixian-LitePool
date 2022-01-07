@@ -26,6 +26,10 @@ namespace LP.Meta
 
         public static string poolUrl = "";
 
+        public static bool noStart = false;
+
+        public const int maxClientFailuresPerMinute = 60;
+
         private Config()
         {
 
@@ -49,6 +53,7 @@ namespace LP.Meta
             Console.WriteLine("    --poolFee\t\t Specify the pool fee");
             Console.WriteLine("    --poolFeeAddress\t\t Specify the Ixian address where to collect fee");
             Console.WriteLine("    --poolUrl\t\t Specify the url that should be used to access the pool - used for display purpose only");
+            Console.WriteLine("    --noStart\t\t Don't start API and sync processes at startup - can be started later from console interface");
             Console.WriteLine("----------- Config File Options -----------");
             Console.WriteLine(" Config file options should use parameterName = parameterValue syntax.");
             Console.WriteLine(" Config file options are stored in ixan.cfg file.");
@@ -163,6 +168,10 @@ namespace LP.Meta
                         poolUrl = value;
                         break;
 
+                    case "noStart":
+                        noStart = (value == "1") || (value.ToLower() == "t") || (value.ToLower() == "true");
+                        break;
+
                     default:
                         // unknown key
                         Console.WriteLine("Unknown config parameter was specified '" + key + "'");
@@ -217,6 +226,8 @@ namespace LP.Meta
             cmd_parser.Setup<string>("poolFeeAddress").Callback(value => poolFeeAddress = value);
 
             cmd_parser.Setup<string>("poolUrl").Callback(value => poolUrl = value);
+
+            cmd_parser.Setup<bool>("noStart").Callback(value => { noStart = true; });
 
             cmd_parser.Parse(args);
 

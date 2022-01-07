@@ -60,6 +60,7 @@ namespace LP.Meta
 
         private Thread updater = null;
         private bool updaterRunning = false;
+        private bool syncPaused = false;
         private ulong networkBlockHeight = 0;
 
         private Dictionary<byte[], ulong> transactionMapping = new Dictionary<byte[], ulong>(new ByteArrayComparer());
@@ -110,6 +111,11 @@ namespace LP.Meta
             tiv = new TransactionInclusion();
 
             updaterRunning = true;
+            if(Config.noStart)
+            {
+                syncPaused = true;
+            }
+
             updater = new Thread(this.updaterThread);
             updater.Start();
         }
@@ -122,6 +128,11 @@ namespace LP.Meta
             {
                 Thread.Sleep(sleepTime);
                 sleepTime = 500;
+
+                if(syncPaused)
+                {
+                    continue;
+                }
 
                 ActivePoolBlock activePoolBlock = Pool.Pool.Instance.getActiveBlock();
                 if (activePoolBlock != null &&
@@ -220,6 +231,16 @@ namespace LP.Meta
                     }
                 }
             }
+        }
+
+        public void pauseSync()
+        {
+            syncPaused = true;
+        }
+
+        public void resumeSync()
+        {
+            syncPaused = false;
         }
 
         private bool initWallet()
@@ -886,12 +907,14 @@ namespace LP.Meta
 
                     blockRepository.Remove(toRemove);
                 }
+
+                BlockStorage.Instance.cleanUpBlocks(networkBlockHeight - ConsensusConfig.getRedactedWindowSize(Block.maxVersion));
             }
         }
 
         public override Block getLastBlock()
         {
-            return null; // this will prevent clients to connect to us
+            return null;
         }
 
         public override Wallet getWallet(byte[] id)

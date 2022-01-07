@@ -35,6 +35,10 @@ namespace LP.Network
         private DateTime shareCountTimeStamp = DateTime.Now;
         private bool sharesStarted = false;
 
+        private bool noClients = false;
+
+        private Dictionary<string, List<DateTime>> clientCallErrors = new Dictionary<string, List<DateTime>>(); 
+
         private static APIServer instance = null;
         public static APIServer Instance
         {
@@ -48,6 +52,10 @@ namespace LP.Network
         {
             this.node = node;
             instance = this;
+            if(Config.noStart)
+            {
+                noClients = true;
+            }
             
             // Start the API server
             start(listen_URLs, authorized_users, allowed_IPs);
@@ -58,10 +66,28 @@ namespace LP.Network
             cache.Compact(1.0);
         }
 
+        public void lockServer()
+        {
+            noClients = true;
+        }
+
+        public void unlockServer()
+        {
+            noClients = false;
+        }
+
         protected override void onUpdate(HttpListenerContext context)
         {
             try
             {
+                if(noClients)
+                {
+                    context.Response.ContentType = "application/json";
+                    JsonError error = new JsonError { code = (int)RPCErrorCode.RPC_IN_WARMUP, message = "API server in lockdown mode." };
+                    sendResponse(context.Response, new JsonResponse { error = error });
+                    return;
+                }
+
                 string post_data = "";
                 string method_name = "";
                 Dictionary<string, object> method_params = null;
@@ -80,7 +106,8 @@ namespace LP.Network
                 }
                 else
                 {
-                    if (context.Request.Url.Segments.Length < 2)
+                    var segments = context.Request.Url.Segments.Where(s => s != "/").ToArray();
+                    if (segments.Length < 1)
                     {
                         context.Response.ContentType = "application/json";
                         JsonError error = new JsonError { code = (int)RPCErrorCode.RPC_INVALID_REQUEST, message = "Unknown action." };
@@ -88,7 +115,7 @@ namespace LP.Network
                         return;
                     }
 
-                    method_name = context.Request.Url.Segments[1].Replace("/", "");
+                    method_name = segments[0].Replace("/", "");
                     method_params = new Dictionary<string, object>();
                     foreach(string key in context.Request.QueryString.Keys)
                     {
@@ -304,17 +331,52 @@ namespace LP.Network
             string id = (string)parameters["id"];
             string worker = (string)parameters["worker"];
             string wallet = (string)parameters["wallet"];
+
+            if(string.IsNullOrEmpty(wallet))
+            {
+                JsonError error = new JsonError { code = (int)RPCErrorCode.RPC_INVALID_PARAMETER, message = "Parameter 'wallet' is empty." };
+                return new JsonResponse { result = null, error = error };
+            }
+
+            lock (clientCallErrors)
+            {
+                if (clientCallErrors.ContainsKey(wallet))
+                {
+                    clientCallErrors[wallet].RemoveAll(c => c < (DateTime.Now - (new TimeSpan(0, 1, 0))));
+
+                    if (clientCallErrors[wallet].Count > Config.maxClientFailuresPerMinute)
+                    {
+                        JsonError error = new JsonError { code = (int)RPCErrorCode.RPC_MISC_ERROR, message = "Too many failures per minute, request denied." };
+                        return new JsonResponse { result = null, error = error };
+                    }
+                }
+                else
+                {
+                    clientCallErrors.Add(wallet, new List<DateTime>());
+                }
+            }
+
             try
             {
                 byte[] addressBytes = Base58Check.Base58CheckEncoding.DecodePlain(wallet);
                 if (!Address.validateChecksum(addressBytes))
                 {
+                    lock (clientCallErrors)
+                    {
+                        clientCallErrors[wallet].Add(DateTime.Now);
+                    }
+
                     JsonError error = new JsonError { code = (int)RPCErrorCode.RPC_INVALID_PARAMETER, message = "Parameter 'wallet' is not a valid Ixian address." };
                     return new JsonResponse { result = null, error = error };
                 }
             }
             catch (Exception e)
             {
+                lock (clientCallErrors)
+                {
+                    clientCallErrors[wallet].Add(DateTime.Now);
+                }
+
                 JsonError error = new JsonError { code = (int)RPCErrorCode.RPC_INVALID_PARAMETER, message = "Parameter 'wallet' is not a valid Ixian address." };
                 return new JsonResponse { result = null, error = error };
             }
@@ -322,11 +384,22 @@ namespace LP.Network
             string nonce = (string)parameters["nonce"];
             if (nonce.Length < 1 || nonce.Length > 128)
             {
+                lock (clientCallErrors)
+                {
+                    clientCallErrors[wallet].Add(DateTime.Now);
+                }
+
                 Logging.info("Received incorrect nonce from miner.");
                 return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_INVALID_PARAMS, message = "Invalid nonce was specified" } };
             }
+
             if(Pool.Pool.Instance.checkDuplicateShare(nonce))
             {
+                lock (clientCallErrors)
+                {
+                    clientCallErrors[wallet].Add(DateTime.Now);
+                }
+
                 Logging.info("Received duplicate nonce from miner.");
                 return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_INVALID_PARAMS, message = "Duplicate nonce was specified" } };
             }
@@ -334,6 +407,11 @@ namespace LP.Network
             ulong blocknum;
             if (!ulong.TryParse((string)parameters["blocknum"], out blocknum))
             {
+                lock (clientCallErrors)
+                {
+                    clientCallErrors[wallet].Add(DateTime.Now);
+                }
+
                 JsonError error = new JsonError { code = (int)RPCErrorCode.RPC_INVALID_PARAMETER, message = "Parameter 'blocknum' is not a number" };
                 return new JsonResponse { result = null, error = error };
             }
@@ -341,6 +419,11 @@ namespace LP.Network
             RepositoryBlock block = node.getBlock(blocknum);
             if (block == null)
             {
+                lock (clientCallErrors)
+                {
+                    clientCallErrors[wallet].Add(DateTime.Now);
+                }
+
                 Logging.info("Received incorrect block number from miner.");
                 return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_INVALID_PARAMS, message = "Invalid block number specified" } };
             }
@@ -349,6 +432,11 @@ namespace LP.Network
 
             if (!miner.isValid())
             {
+                lock (clientCallErrors)
+                {
+                    clientCallErrors[wallet].Add(DateTime.Now);
+                }
+
                 JsonError error = new JsonError { code = (int)RPCErrorCode.RPC_INTERNAL_ERROR, message = "Internal error while querying miner data." };
                 return new JsonResponse { result = null, error = error };
             }
@@ -398,6 +486,11 @@ namespace LP.Network
             }
             else
             {
+                lock (clientCallErrors)
+                {
+                    clientCallErrors[wallet].Add(DateTime.Now);
+                }
+
                 Logging.warn("Miner share {0} REJECTED.", nonce);
             }
 
