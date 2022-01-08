@@ -116,13 +116,6 @@ namespace LP.Pool
                 }
             }
 
-            List<ShareDBType> shares = PoolDB.Instance.getUnprocessedShares(paymentSession);
-            List<MinerDBType> miners = PoolDB.Instance.getMiners(shares.Select(shr => shr.minerId).Distinct().ToList());
-            Dictionary<int, List<ShareDBType>> sharesByMiner = shares.Where(shr => miners.Any(m => m.id == shr.minerId))
-                .GroupBy(sh => sh.minerId).ToDictionary(k => k.Key, v => v.ToList());
-            int shareCount = 0;
-            sharesByMiner.Values.ToList().ForEach(shrList => shareCount += shrList.Count);
-
             var totalBalance = node.getBalance().balance;
             var pendingBalance = totalBalance;
 
@@ -130,21 +123,29 @@ namespace LP.Pool
 
             if (totalBalance > 100)
             {
-                if(Config.poolFee > 0)
+                if (Config.poolFee > 0)
                 {
                     pendingBalance = totalBalance - (totalBalance * poolFee);
                 }
+
+                List<ShareDBType> shares = PoolDB.Instance.getUnprocessedShares(paymentSession);
+                List<MinerDBType> miners = PoolDB.Instance.getMiners(shares.Select(shr => shr.minerId).Distinct().ToList());
+                Dictionary<int, List<ShareDBType>> sharesByMiner = shares.Where(shr => miners.Any(m => m.id == shr.minerId))
+                    .GroupBy(sh => sh.minerId).ToDictionary(k => k.Key, v => v.ToList());
+                int shareCount = 0;
+                sharesByMiner.Values.ToList().ForEach(shrList => shareCount += shrList.Count);
+
                 foreach (var minerShare in sharesByMiner)
                 {
                     var miner = miners.FirstOrDefault(m => m.id == minerShare.Key);
-                    if(miner != null)
+                    if (miner != null)
                     {
                         IxiNumber pendingValue = (pendingBalance * minerShare.Value.Count / shareCount);
                         IxiNumber fee = node.getTransactionFee(miner.address, pendingValue);
                         pendingValue -= fee;
 
                         string txId = node.sendTransaction(miner.address, pendingValue);
-                        if(!String.IsNullOrEmpty(txId))
+                        if (!String.IsNullOrEmpty(txId))
                         {
                             PaymentDBType payment = new PaymentDBType
                             {
@@ -170,7 +171,7 @@ namespace LP.Pool
                     }
                 }
 
-                if(Config.poolFee > 0)
+                if (Config.poolFee > 0)
                 {
                     IxiNumber pendingValue = totalBalance - pendingBalance;
                     IxiNumber fee = node.getTransactionFee(Config.poolFeeAddress, pendingValue);
