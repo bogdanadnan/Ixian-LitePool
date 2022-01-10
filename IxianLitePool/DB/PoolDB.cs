@@ -478,7 +478,7 @@ namespace LP.DB
                 (SELECT COUNT(Share.id) FROM Share WHERE Share.minerId = Miner.Id AND Share.processed = 0) AS RoundShares
                 FROM Miner
                 WHERE Miner.lastSeen > ?
-                ORDER BY HashRate DESC, Miner.lastSeen DESC", limitWorker, limitMiner).ToList();
+                ORDER BY RoundShares DESC, Miner.lastSeen DESC", limitWorker, limitMiner).ToList();
         }
 
         public List<BlockData> getMinedBlocks()

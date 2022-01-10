@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using LP.DB;
 using LP.Meta;
 using LP.Network;
@@ -70,6 +71,7 @@ namespace LP.Pool
 
         private object activePoolBlockLock = new object();
         private ActivePoolBlock activePoolBlock = null;
+        private List<ulong> last5ActiveBlocks = new List<ulong>();
 
         private ulong adjustedDifficulty = Config.startingDifficulty;
 
@@ -157,13 +159,28 @@ namespace LP.Pool
                     poolDifficulty = (long)getDifficulty(),
                     resolution = (int)blk.resolution
                 });
+
                 activePoolBlock = blk;
-            } 
+
+                last5ActiveBlocks.Add(activePoolBlock.blockNum);
+                while (last5ActiveBlocks.Count > 5)
+                {
+                    last5ActiveBlocks.RemoveAt(0);
+                }
+            }
         }
 
         public bool checkDuplicateShare(string nonce)
         {
             return PoolDB.Instance.shareExists(nonce);
+        }
+
+        public bool isMinedBlock(ulong blockNum)
+        {
+            lock (activePoolBlockLock)
+            {
+                return last5ActiveBlocks.Any(b => b == blockNum);
+            }
         }
 
         public static int getTotalHashrate()

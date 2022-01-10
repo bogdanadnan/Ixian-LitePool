@@ -416,6 +416,17 @@ namespace LP.Network
                 return new JsonResponse { result = null, error = error };
             }
 
+            if(!Pool.Pool.Instance.isMinedBlock(blocknum))
+            {
+                lock (clientCallErrors)
+                {
+                    clientCallErrors[wallet].Add(DateTime.Now);
+                }
+
+                Logging.info("Received incorrect block number from miner.");
+                return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_INVALID_PARAMS, message = "Invalid block number specified" } };
+            }
+
             RepositoryBlock block = node.getBlock(blocknum);
             if (block == null)
             {
