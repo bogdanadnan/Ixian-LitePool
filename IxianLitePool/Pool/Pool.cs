@@ -89,7 +89,7 @@ namespace LP.Pool
             return adjustedDifficulty;
         }
 
-        public void updateSharesPerSecond(int shrrt)
+        public void updateSharesPerSecond(double shrrt)
         {
             if(shrrt < (Config.targetSharesPerSecond - 1))
             {

@@ -476,7 +476,7 @@ namespace LP.Network
                     double shares = (++shareCount);
                     if (interval > 10)
                     {
-                        Pool.Pool.Instance.updateSharesPerSecond((int)(shares / interval));
+                        Pool.Pool.Instance.updateSharesPerSecond(shares / interval);
                         shareCountTimeStamp = DateTime.Now;
                         shareCount = 0;
                     }
