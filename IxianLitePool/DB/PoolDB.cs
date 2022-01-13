@@ -158,6 +158,20 @@ namespace LP.DB
             public string value { get; set; }
         }
 
+        [Table("Notification")]
+        public class NotificationDBType
+        {
+            [PrimaryKey, AutoIncrement]
+            public int id { get; set; }
+
+            public int type { get; set; }
+
+            public string notification { get; set; }
+
+            [Indexed]
+            public bool active { get; set; }
+        }
+
         public class DoubleData
         {
             public double value { get; set; }
@@ -253,6 +267,7 @@ namespace LP.DB
                 db.CreateTable(typeof(PowDataDBType));
                 db.CreateTable(typeof(PaymentDBType));
                 db.CreateTable(typeof(PoolStateDBType));
+                db.CreateTable(typeof(NotificationDBType));
             }
             catch(Exception ex)
             {
@@ -597,6 +612,35 @@ namespace LP.DB
         public List<MinerDBType> getMinersWithPendingBalance()
         {
             return db.Table<MinerDBType>().Where(m => m.pending > 0).ToList();
+        }
+
+        public int addNotification(NotificationDBType entry)
+        {
+            int recs = db.Insert(entry);
+
+            if (recs == 0)
+            {
+                return -1;
+            }
+            else
+            {
+                return entry.id > 0 ? entry.id : (int)SQLite3.LastInsertRowid(db.Handle);
+            }
+        }
+
+        public void updateNotificationStatus(int id, bool status)
+        {
+            var notification = db.Table<NotificationDBType>().Where(n => n.id == id).FirstOrDefault();
+            if(notification != null)
+            {
+                notification.active = status;
+                db.Update(notification);
+            }
+        }
+
+        public List<NotificationDBType> getActiveNotifications()
+        {
+            return db.Table<NotificationDBType>().Where(n => n.active == true).OrderBy(n => n.id).ToList();
         }
     }
 }

@@ -17,6 +17,21 @@ namespace LP.Pool
         EvictedFromRedactedWindow = 4
     }
 
+    public enum NotificationType
+    {
+        Primary = 0,
+        Info = 1,
+        Success = 2,
+        Warning = 3,
+        Danger = 4
+    }
+
+    public class NotificationData
+    {
+        public string Type { get; set; }
+        public string Notification { get; set; }
+    }
+
     public class ActivePoolBlock : RepositoryBlock
     {
         public ActivePoolBlock(RepositoryBlock blk)
@@ -60,7 +75,7 @@ namespace LP.Pool
         {
             get
             {
-                if(instance == null)
+                if (instance == null)
                 {
                     instance = new Pool();
                 }
@@ -78,7 +93,7 @@ namespace LP.Pool
         public Pool()
         {
             var diff = State.Instance.get("PoolDifficulty");
-            if(!ulong.TryParse(diff, out adjustedDifficulty) || adjustedDifficulty == 0)
+            if (!ulong.TryParse(diff, out adjustedDifficulty) || adjustedDifficulty == 0)
             {
                 adjustedDifficulty = Config.startingDifficulty;
             }
@@ -91,7 +106,7 @@ namespace LP.Pool
 
         public void updateSharesPerSecond(double shrrt)
         {
-            if(shrrt < (Config.targetSharesPerSecond - 1))
+            if (shrrt < (Config.targetSharesPerSecond - 1))
             {
                 if (adjustedDifficulty > 1000)
                 {
@@ -99,7 +114,7 @@ namespace LP.Pool
                     State.Instance.set("PoolDifficulty", adjustedDifficulty.ToString());
                 }
             }
-            else if(shrrt > (Config.targetSharesPerSecond + 1))
+            else if (shrrt > (Config.targetSharesPerSecond + 1))
             {
                 adjustedDifficulty += 1000;
                 State.Instance.set("PoolDifficulty", adjustedDifficulty.ToString());
@@ -108,7 +123,7 @@ namespace LP.Pool
 
         public void resetActiveBlock(MiningBlockResolution resolution, ulong targetBlockNum)
         {
-            lock(activePoolBlockLock)
+            lock (activePoolBlockLock)
             {
                 PoolBlockDBType blk = PoolDB.Instance.getPoolBlock((long)targetBlockNum);
 
@@ -134,7 +149,7 @@ namespace LP.Pool
 
         public ActivePoolBlock getActiveBlock()
         {
-            lock(activePoolBlockLock)
+            lock (activePoolBlockLock)
             {
                 if (activePoolBlock != null)
                 {
@@ -149,7 +164,7 @@ namespace LP.Pool
 
         internal void setActiveBlock(ActivePoolBlock blk)
         {
-            lock(activePoolBlockLock)
+            lock (activePoolBlockLock)
             {
                 PoolDB.Instance.updatePoolBlock(new PoolBlockDBType
                 {
@@ -197,6 +212,30 @@ namespace LP.Pool
         public static List<BlockData> getMinedBlocks()
         {
             return PoolDB.Instance.getMinedBlocks();
+        }
+
+        public int addNotification(NotificationType type, string notification, bool active)
+        {
+            return PoolDB.Instance.addNotification(new NotificationDBType
+            {
+                type = (int)type,
+                notification = notification,
+                active = active
+            });
+        }
+
+        public void updateNotificationStatus(int id, bool status)
+        {
+            PoolDB.Instance.updateNotificationStatus(id, status);
+        }
+
+        public List<NotificationData> getActiveNotifications()
+        {
+            return PoolDB.Instance.getActiveNotifications().ConvertAll(n => new NotificationData
+            {
+                Type = ((NotificationType)n.type).ToString().ToLower(),
+                Notification = n.notification
+            });
         }
     }
 }

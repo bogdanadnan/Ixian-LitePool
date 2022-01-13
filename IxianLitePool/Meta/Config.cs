@@ -30,6 +30,8 @@ namespace LP.Meta
 
         public const int maxClientFailuresPerMinute = 60;
 
+        public static int miningBlocksPoolSize = 50;
+
         private Config()
         {
 
@@ -54,6 +56,7 @@ namespace LP.Meta
             Console.WriteLine("    --poolFeeAddress\t\t Specify the Ixian address where to collect fee");
             Console.WriteLine("    --poolUrl\t\t Specify the url that should be used to access the pool - used for display purpose only");
             Console.WriteLine("    --noStart\t\t Don't start API and sync processes at startup - can be started later from console interface");
+            Console.WriteLine("    --blocksPoolSize\t\t Set pool size for blocks with lowest difficulty - mining block will be choose from these");
             Console.WriteLine("----------- Config File Options -----------");
             Console.WriteLine(" Config file options should use parameterName = parameterValue syntax.");
             Console.WriteLine(" Config file options are stored in ixan.cfg file.");
@@ -172,6 +175,19 @@ namespace LP.Meta
                         noStart = (value == "1") || (value.ToLower() == "t") || (value.ToLower() == "true");
                         break;
 
+                    case "blocksPoolSize":
+                        if (!int.TryParse(value, out miningBlocksPoolSize))
+                        {
+                            Console.WriteLine("Mining blocks pool size value should be an integer number between 1 and 200.");
+                            return false;
+                        }
+                        if (miningBlocksPoolSize < 1 || miningBlocksPoolSize > 200)
+                        {
+                            Console.WriteLine("Mining blocks pool size value should be an integer number between 1 and 200.");
+                            return false;
+                        }
+                        break;
+
                     default:
                         // unknown key
                         Console.WriteLine("Unknown config parameter was specified '" + key + "'");
@@ -229,11 +245,18 @@ namespace LP.Meta
 
             cmd_parser.Setup<bool>("noStart").Callback(value => { noStart = true; });
 
+            cmd_parser.Setup<int>("blocksPoolSize").Callback(value => miningBlocksPoolSize = value);
+
             cmd_parser.Parse(args);
 
             if(poolFee > 1 || poolFee < 0)
             {
                 poolFee = 0.01;
+            }
+
+            if (miningBlocksPoolSize < 1 || miningBlocksPoolSize > 200)
+            {
+                miningBlocksPoolSize = 100;
             }
 
             return continueProcessing;

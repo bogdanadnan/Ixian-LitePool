@@ -20,6 +20,7 @@ export class DashboardComponent implements OnInit{
     public chartHours;
 
     private oneMinuteUpdater: any;
+    public notifications: NotificationData[];
 
     constructor(private http: HttpClient) { }
 
@@ -96,9 +97,15 @@ export class DashboardComponent implements OnInit{
             document.getElementById("poolDifficulty").innerText = data.PoolDifficulty.toString();
             document.getElementById("blocksMined").innerText = data.BlocksMined.toString();
             document.getElementById("ixiPrice").innerText = data.IxiPrice.toFixed(3);
+            this.notifications = data.Notifications;
         });
     }
 }
+
+interface NotificationData {
+    Type: string;
+    Notification: string;
+};
 
 interface DashboardStatus {
     NetworkBlockHeight: number;
@@ -111,4 +118,5 @@ interface DashboardStatus {
     PoolDifficulty: number;
     BlocksMined: number;
     IxiPrice: number;
+    Notifications: NotificationData[];
 };

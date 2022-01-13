@@ -24,6 +24,7 @@ namespace LP.Pool
         public ulong PoolDifficulty { get; set; }
         public int BlocksMined { get; set; }
         public decimal IxiPrice { get; set; }
+        public List<NotificationData> Notifications { get; set; }
     }
 
     public class DashboardController : ApiController
@@ -52,7 +53,8 @@ namespace LP.Pool
                 PoolHashrate = Pool.getTotalHashrate(),
                 PoolDifficulty = Pool.Instance.getDifficulty(),
                 BlocksMined = Pool.getBlocksMinedInLast24h(),
-                IxiPrice = get1000IxiPrice()
+                IxiPrice = get1000IxiPrice(),
+                Notifications = Pool.Instance.getActiveNotifications()
             };
 
             MemCache.Instance.Set("dashboard_data", dashboardData, new TimeSpan(0, 1, 0));

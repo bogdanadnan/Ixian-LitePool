@@ -5,6 +5,7 @@ using IXICore.Utils;
 using LP.DB;
 using LP.Meta;
 using LP.Network;
+using LP.Pool;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -107,6 +108,28 @@ namespace IxianLitePool
                 case "resumesync":
                     node.resumeSync();
                     Console.WriteLine("Sync process resumed.");
+                    break;
+
+                case "pausepay":
+                    Payment.Instance.pause();
+                    Console.WriteLine("Payment process paused.");
+                    break;
+
+                case "resumepay":
+                    Payment.Instance.resume();
+                    Console.WriteLine("Payment process resumed.");
+                    break;
+
+                case "addnote":
+                    handleAddNote(line);
+                    break;
+
+                case "enablenote":
+                    handleEnableNote(line);
+                    break;
+
+                case "disablenote":
+                    handleDisableNote(line);
                     break;
             }
         }
@@ -326,5 +349,104 @@ namespace IxianLitePool
 
             Console.WriteLine("Pending transactions: {0}\n", PendingTransactions.pendingTransactionCount());
         }
+
+        private void handleAddNote(string line)
+        {
+            string notificationData = line.Substring(7).Trim();
+
+            string[] split = notificationData.Split(new string[] { " " }, StringSplitOptions.None);
+
+            if(split.Count() < 2)
+            {
+                Console.WriteLine("Incorrect parameters for addnote. Should be notification type (primary, info, success, warning, danger) followed by content.\n");
+                return;
+            }
+
+            NotificationType type;
+            string content;
+
+            switch(split[0].Trim().ToLower())
+            {
+                case "primary":
+                    type = NotificationType.Primary;
+                    content = notificationData.Substring(7).Trim();
+                    break;
+                case "info":
+                    type = NotificationType.Info;
+                    content = notificationData.Substring(4).Trim();
+                    break;
+                case "success":
+                    type = NotificationType.Success;
+                    content = notificationData.Substring(7).Trim();
+                    break;
+                case "warning":
+                    type = NotificationType.Warning;
+                    content = notificationData.Substring(7).Trim();
+                    break;
+                case "danger":
+                    type = NotificationType.Danger;
+                    content = notificationData.Substring(6).Trim();
+                    break;
+                default:
+                    Console.WriteLine("Incorrect parameters for addnote. Should be notification type (primary, info, success, warning, danger) followed by content.\n");
+                    return;
+            }
+
+            if (string.IsNullOrEmpty(content))
+            {
+                Console.WriteLine("Incorrect parameters for addnote. Should be notification type (primary, info, success, warning, danger) followed by content.\n");
+                return;
+            }
+
+            int id = Pool.Instance.addNotification(type, content, false);
+
+            if(id > 0)
+            {
+                Console.WriteLine("Successfully created notification with ID {0}, use enablenote command to activate: type - {1}   content - {2}", id, type.ToString(), content);
+            }
+        }
+
+        private void handleEnableNote(string line)
+        {
+            string[] split = line.Split(new string[] { " " }, StringSplitOptions.None);
+            if (split.Count() < 2)
+            {
+                Console.WriteLine("Incorrect parameters for enablenote. Should be notification id.\n");
+                return;
+            }
+
+            int noteId = 0;
+            if (!int.TryParse(split[1], out noteId))
+            {
+                Console.WriteLine("Incorrect parameters for enablenote. Should be notification id.\n");
+                return;
+            }
+
+            Console.WriteLine("Enabling notification with id {0}", noteId);
+
+            Pool.Instance.updateNotificationStatus(noteId, true);
+        }
+
+        private void handleDisableNote(string line)
+        {
+            string[] split = line.Split(new string[] { " " }, StringSplitOptions.None);
+            if (split.Count() < 2)
+            {
+                Console.WriteLine("Incorrect parameters for disablenote. Should be note id.\n");
+                return;
+            }
+
+            int noteId = 0;
+            if (!int.TryParse(split[1], out noteId))
+            {
+                Console.WriteLine("Incorrect parameters for disablenote. Should be note id.\n");
+                return;
+            }
+
+            Console.WriteLine("Disabling notification with id {0}", noteId);
+
+            Pool.Instance.updateNotificationStatus(noteId, false);
+        }
+
     }
 }

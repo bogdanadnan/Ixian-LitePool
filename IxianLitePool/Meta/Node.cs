@@ -1267,7 +1267,7 @@ namespace LP.Meta
                 var activePoolBlockCandidates = blockRepository.Where(x => !knownSolvedBlocks.ContainsKey(x.Key)).Select(x => x.Value).OrderBy(x => x.difficulty);
                 if (activePoolBlockCandidates.Count() > 0)
                 {
-                    activePoolBlock = new ActivePoolBlock(activePoolBlockCandidates.ElementAt((new Random()).Next(Math.Min(activePoolBlockCandidates.Count(), 50))));
+                    activePoolBlock = new ActivePoolBlock(activePoolBlockCandidates.ElementAt((new Random()).Next(Math.Min(activePoolBlockCandidates.Count(), Config.miningBlocksPoolSize))));
                     Pool.Pool.Instance.setActiveBlock(activePoolBlock);
                 }
             }

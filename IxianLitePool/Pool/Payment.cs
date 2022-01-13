@@ -30,6 +30,7 @@ namespace LP.Pool
         private DateTime lastPaymentTimeStamp = DateTime.Now;
         private Node node = null;
         private List<PaymentDBType> unverifiedPayments = new List<PaymentDBType>();
+        private bool paymentPaused = false;
 
         public Payment()
         {}
@@ -101,10 +102,25 @@ namespace LP.Pool
             }
         }
 
+        public void resume()
+        {
+            paymentPaused = false;
+        }
+
+        public void pause()
+        {
+            paymentPaused = true;
+        }
+
         public void processPayments()
         {
             lastPaymentTimeStamp = DateTime.Now;
             string paymentSession = Guid.NewGuid().ToString();
+
+            if(paymentPaused)
+            {
+                return;
+            }
 
             ulong lastPaymentHeight;
             var lastPaymentHeightStr = State.Instance.get("LastPaymentHeight");
