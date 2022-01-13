@@ -30,7 +30,7 @@ namespace LP.Meta
 
         public const int maxClientFailuresPerMinute = 60;
 
-        public static int miningBlocksPoolSize = 50;
+        public static int miningBlocksPoolSize = 100;
 
         private Config()
         {
