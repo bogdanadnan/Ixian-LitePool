@@ -49,6 +49,17 @@ export class NavbarComponent implements OnInit{
         }
         return 'Dashboard';
     }
+
+    getShortTitle() {
+        var title = this.getTitle();
+        if (title.startsWith("Account:")) {
+            title = title.substring(0, 23);
+            title += "...";
+        }
+
+        return title;
+    }
+
     searchMiner(value: String) {
         this.router.navigateByUrl('/miner/' + value);
     }
