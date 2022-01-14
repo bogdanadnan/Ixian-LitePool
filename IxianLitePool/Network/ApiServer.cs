@@ -194,11 +194,6 @@ namespace LP.Network
         private JsonResponse onGetMiningBlock(Dictionary<string, object> parameters)
         {
             // Check that all the required query parameters are sent
-            if (!parameters.ContainsKey("id"))
-            {
-                JsonError error = new JsonError { code = (int)RPCErrorCode.RPC_INVALID_PARAMETER, message = "Parameter 'id' is missing." };
-                return new JsonResponse { result = null, error = error };
-            }
             if (!parameters.ContainsKey("worker"))
             {
                 JsonError error = new JsonError { code = (int)RPCErrorCode.RPC_INVALID_PARAMETER, message = "Parameter 'worker' is missing." };
@@ -220,7 +215,13 @@ namespace LP.Network
                 return new JsonResponse { result = null, error = error };
             }
 
-            string id = (string)parameters["id"];
+            string id = "0";
+
+            if (parameters.ContainsKey("id"))
+            {
+                id = (string)parameters["id"];
+            }
+
             string worker = (string)parameters["worker"];
             string wallet = (string)parameters["wallet"];
 
@@ -302,11 +303,6 @@ namespace LP.Network
         private JsonResponse onSubmitMiningSolution(Dictionary<string, object> parameters)
         {
             // Check that all the required query parameters are sent
-            if (!parameters.ContainsKey("id"))
-            {
-                JsonError error = new JsonError { code = (int)RPCErrorCode.RPC_INVALID_PARAMETER, message = "Parameter 'id' is missing." };
-                return new JsonResponse { result = null, error = error };
-            }
             if (!parameters.ContainsKey("worker"))
             {
                 JsonError error = new JsonError { code = (int)RPCErrorCode.RPC_INVALID_PARAMETER, message = "Parameter 'worker' is missing." };
@@ -328,7 +324,13 @@ namespace LP.Network
                 return new JsonResponse { result = null, error = error };
             }
 
-            string id = (string)parameters["id"];
+            string id = "0";
+
+            if (parameters.ContainsKey("id"))
+            {
+                id = (string)parameters["id"];
+            }
+
             string worker = (string)parameters["worker"];
             string wallet = (string)parameters["wallet"];
 
