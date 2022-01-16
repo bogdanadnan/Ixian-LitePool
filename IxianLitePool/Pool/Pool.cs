@@ -108,15 +108,15 @@ namespace LP.Pool
         {
             if (shrrt < (Config.targetSharesPerSecond - 1))
             {
-                if (adjustedDifficulty > 1000)
+                if (adjustedDifficulty > 100000)
                 {
-                    adjustedDifficulty -= 1000;
+                    adjustedDifficulty -= 100000;
                     State.Instance.set("PoolDifficulty", adjustedDifficulty.ToString());
                 }
             }
             else if (shrrt > (Config.targetSharesPerSecond + 1))
             {
-                adjustedDifficulty += 1000;
+                adjustedDifficulty += 100000;
                 State.Instance.set("PoolDifficulty", adjustedDifficulty.ToString());
             }
         }

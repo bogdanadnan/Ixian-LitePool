@@ -23,6 +23,8 @@ using System.Net;
 using IXICore.Utils;
 using LP.Pool;
 using Microsoft.Extensions.Caching.Memory;
+using IxianLitePool;
+using System.Text;
 
 namespace LP.Network
 {
@@ -78,14 +80,42 @@ namespace LP.Network
 
         protected override void onUpdate(HttpListenerContext context)
         {
+            Guid id = Guid.NewGuid();
+
+            if (Commands.logAPI)
+            {
+                try
+                {
+                    string logEntry = string.Format("{0} {1} API request: IP {2} Request {3}" + Environment.NewLine, id.ToString(), DateTime.Now.ToString("MM/dd/yyyy hh:mm:ss.fff"),
+                        context.Request.RemoteEndPoint.Address.ToString(), context.Request.Url.PathAndQuery);
+                    File.AppendAllText("api.log", logEntry);
+                }
+                catch { }
+            }
+
+            string response = onUpdateLocal(context);
+
+            if (Commands.logAPI)
+            {
+                try
+                {
+                    string logEntry = string.Format("{0} {1} API response: IP {2} Response {3}" + Environment.NewLine, id.ToString(), DateTime.Now.ToString("MM/dd/yyyy hh:mm:ss.fff"),
+                        context.Request.RemoteEndPoint.Address.ToString(), response);
+                    File.AppendAllText("api.log", logEntry);
+                }
+                catch { }
+            }
+        }
+
+        protected string onUpdateLocal(HttpListenerContext context)
+        {
             try
             {
                 if(noClients)
                 {
                     context.Response.ContentType = "application/json";
                     JsonError error = new JsonError { code = (int)RPCErrorCode.RPC_IN_WARMUP, message = "API server in lockdown mode." };
-                    sendResponse(context.Response, new JsonResponse { error = error });
-                    return;
+                    return sendAPIResponse(context.Response, new JsonResponse { error = error });
                 }
 
                 string post_data = "";
@@ -111,8 +141,7 @@ namespace LP.Network
                     {
                         context.Response.ContentType = "application/json";
                         JsonError error = new JsonError { code = (int)RPCErrorCode.RPC_INVALID_REQUEST, message = "Unknown action." };
-                        sendResponse(context.Response, new JsonResponse { error = error });
-                        return;
+                        return sendAPIResponse(context.Response, new JsonResponse { error = error });
                     }
 
                     method_name = segments[0].Replace("/", "");
@@ -135,33 +164,32 @@ namespace LP.Network
                 {
                     context.Response.ContentType = "application/json";
                     JsonError error = new JsonError { code = (int)RPCErrorCode.RPC_INVALID_REQUEST, message = "Unknown action." };
-                    sendResponse(context.Response, new JsonResponse { error = error });
-                    return;
+                    return sendAPIResponse(context.Response, new JsonResponse { error = error });
                 }
 
                 try
                 {
                     Logging.trace("Processing request " + context.Request.Url);
-                    processRequest(context, method_name, method_params);
+                    return processAPIRequest(context, method_name, method_params);
                 }
                 catch (Exception e)
                 {
                     context.Response.ContentType = "application/json";
                     JsonError error = new JsonError { code = (int)RPCErrorCode.RPC_INTERNAL_ERROR, message = "Unknown error occured, see log for details." };
-                    sendResponse(context.Response, new JsonResponse { error = error });
                     Logging.error("Exception occured in API server while processing '{0}'. {1}", context.Request.Url, e);
+                    return sendAPIResponse(context.Response, new JsonResponse { error = error });
                 }
             }
             catch (Exception e)
             {
                 context.Response.ContentType = "application/json";
                 JsonError error = new JsonError { code = (int)RPCErrorCode.RPC_INTERNAL_ERROR, message = "Unknown error occured, see log for details." };
-                sendResponse(context.Response, new JsonResponse { error = error });
                 Logging.error("Exception occured in API server. {0}", e);
+                return sendAPIResponse(context.Response, new JsonResponse { error = error });
             }
         }
                 
-        protected override bool processRequest(HttpListenerContext context, string methodName, Dictionary<string, object> parameters)
+        protected string processAPIRequest(HttpListenerContext context, string methodName, Dictionary<string, object> parameters)
         {
             JsonResponse response = null;
 
@@ -177,17 +205,56 @@ namespace LP.Network
             
             if (response == null)
             {
-                return false;
+                return "";
             }
 
             // Set the content type to plain to prevent xml parsing errors in various browsers
             context.Response.ContentType = "application/json";
 
-            sendResponse(context.Response, response);
+            string responseString = sendAPIResponse(context.Response, response);
 
             context.Response.Close();
 
-            return true;
+            return responseString;
+        }
+
+        public string sendAPIResponse(HttpListenerResponse responseObject, JsonResponse response)
+        {
+            string responseString = JsonConvert.SerializeObject(response);
+
+            string responseError = "null";
+            if (response.error != null)
+            {
+                try
+                {
+                    responseError = JsonConvert.SerializeObject(response.error);
+                }
+                catch (Exception)
+                {
+                    responseError = response.error.ToString();
+                }
+            }
+
+            Logging.trace("Processed request, sending response with error code: {0}", responseError);
+
+            byte[] buffer = Encoding.UTF8.GetBytes(responseString);
+
+            try
+            {
+                responseObject.ContentLength64 = buffer.Length;
+                Stream output = responseObject.OutputStream;
+                output.Write(buffer, 0, buffer.Length);
+                output.Close();
+            }
+            catch (Exception e)
+            {
+                if (continueRunning)
+                {
+                    Logging.error("APIServer: {0}", e);
+                }
+            }
+
+            return responseString;
         }
 
         // Returns an empty PoW block based on the search algorithm provided as a parameter

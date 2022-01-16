@@ -15,7 +15,10 @@ namespace IxianLitePool
 {
     class Commands
     {
+        public static bool logAPI = false;
+
         Node node = null;
+
         public Commands(Node node)
         {
             this.node = node;
@@ -130,6 +133,16 @@ namespace IxianLitePool
 
                 case "disablenote":
                     handleDisableNote(line);
+                    break;
+
+                case "enablelogapi":
+                    logAPI = true;
+                    Console.WriteLine("API logging enabled.");
+                    break;
+
+                case "disablelogapi":
+                    logAPI = false;
+                    Console.WriteLine("API logging disabled.");
                     break;
             }
         }
