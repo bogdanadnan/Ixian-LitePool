@@ -18,8 +18,8 @@ namespace LP.Meta
         public static int poolPort = 8080;
         public static int apiPort = 8081;
 
-        public static ulong startingDifficulty = 10000;
-        public static ulong diffStep = 100000;
+        public static ulong startingDifficulty = 10000000000000000000;
+        public static ulong diffStep = 1000000000000000;
         public static int targetSharesPerSecond = 10;
 
         public static double poolFee = 0.00;

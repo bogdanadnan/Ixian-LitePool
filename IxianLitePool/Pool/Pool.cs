@@ -89,6 +89,7 @@ namespace LP.Pool
         private List<ulong> last5ActiveBlocks = new List<ulong>();
 
         private ulong adjustedDifficulty = Config.startingDifficulty;
+        private ulong blockDifficulty = ulong.MaxValue;
 
         public Pool()
         {
@@ -101,7 +102,7 @@ namespace LP.Pool
 
         public ulong getDifficulty()
         {
-            return adjustedDifficulty;
+            return Math.Min(adjustedDifficulty, blockDifficulty);
         }
 
         public void updateSharesPerSecond(double shrrt)
@@ -182,6 +183,7 @@ namespace LP.Pool
                 });
 
                 activePoolBlock = blk;
+                blockDifficulty = blk.difficulty;
 
                 last5ActiveBlocks.Add(activePoolBlock.blockNum);
                 while (last5ActiveBlocks.Count > 5)
