@@ -94,7 +94,7 @@ export class DashboardComponent implements OnInit{
             document.getElementById("totalPayments").innerText = data.TotalPayments.toFixed(2);
             document.getElementById("totalPending").innerText = data.TotalPending.toFixed(2);
             document.getElementById("poolHashrate").innerText = data.PoolHashrate.toFixed(2);
-            document.getElementById("poolDifficulty").innerText = data.PoolDifficulty.toString();
+            document.getElementById("poolDifficulty").innerText = (Math.floor(data.PoolDifficulty / 10000000000000)).toString();
             document.getElementById("blocksMined").innerText = data.BlocksMined.toString();
             document.getElementById("ixiPrice").innerText = data.IxiPrice.toFixed(3);
             this.notifications = data.Notifications;
