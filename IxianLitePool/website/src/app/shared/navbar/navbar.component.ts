@@ -61,7 +61,10 @@ export class NavbarComponent implements OnInit{
     }
 
     searchMiner(value: String) {
-        this.router.navigateByUrl('/miner/' + value);
+        var minerAccount = value.trim();
+        if (minerAccount != '') {
+            this.router.navigateByUrl('/miner/' + minerAccount);
+        }
     }
     sidebarToggle() {
         if (this.sidebarVisible === false) {

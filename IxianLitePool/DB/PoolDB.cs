@@ -508,7 +508,8 @@ namespace LP.DB
                         AND Share.timeStamp = (SELECT MIN(Share.timeStamp) FROM Share WHERE Share.blockNum = PoolBlock.blockNum AND Share.blockResolved = 1)
 	                LEFT JOIN Miner ON Miner.id = Share.minerId
 	            WHERE PoolBlock.resolution = 2
-	            ORDER BY PoolBlock.miningEnd DESC", address).ToList();
+	            ORDER BY PoolBlock.miningEnd DESC
+                LIMIT 1000", address).ToList();
         }
 
         public List<PaymentData> getPayments()
@@ -517,7 +518,8 @@ namespace LP.DB
         	    	Payment.txId AS TxId, IIF(Payment.verified = 1, 'Verified', 'Pending') AS Status
                 FROM Payment
 		            LEFT JOIN Miner ON Miner.id = Payment.minerId
-                ORDER BY Payment.timeStamp DESC").ToList();
+                ORDER BY Payment.timeStamp DESC
+                LIMIT 1000").ToList();
         }
 
         public List<PoolStateDBType> getAllPoolStates()
@@ -606,7 +608,8 @@ namespace LP.DB
             return db.Query<MinerPayment>(@"SELECT Payment.txId AS TxId, Payment.timeStamp AS TimeStamp, Payment.value AS Value, IIF(Payment.verified = 1, 'Verified', 'Pending') AS Status
                                             FROM Payment
                                                 JOIN Miner ON Payment.minerId = Miner.id AND Miner.address = ?
-                                            ORDER BY Payment.timeStamp DESC", address).ToList();
+                                            ORDER BY Payment.timeStamp DESC
+                                            LIMIT 1000", address).ToList();
         }
 
         public List<MinerDBType> getMinersWithPendingBalance()
