@@ -108,17 +108,23 @@ namespace LP.Pool
         {
             if (shrrt < (Config.targetSharesPerSecond - 1))
             {
-                if (adjustedDifficulty > 100000)
+                if (adjustedDifficulty > Config.diffStep)
                 {
-                    adjustedDifficulty -= 100000;
+                    adjustedDifficulty -= Config.diffStep;
                     State.Instance.set("PoolDifficulty", adjustedDifficulty.ToString());
                 }
             }
             else if (shrrt > (Config.targetSharesPerSecond + 1))
             {
-                adjustedDifficulty += 100000;
+                adjustedDifficulty += Config.diffStep;
                 State.Instance.set("PoolDifficulty", adjustedDifficulty.ToString());
             }
+        }
+
+        public void setDifficulty(ulong diff)
+        {
+            adjustedDifficulty = diff;
+            State.Instance.set("PoolDifficulty", diff.ToString());
         }
 
         public void resetActiveBlock(MiningBlockResolution resolution, ulong targetBlockNum)

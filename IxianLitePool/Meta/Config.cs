@@ -19,6 +19,7 @@ namespace LP.Meta
         public static int apiPort = 8081;
 
         public static ulong startingDifficulty = 10000;
+        public static ulong diffStep = 100000;
         public static int targetSharesPerSecond = 10;
 
         public static double poolFee = 0.00;
@@ -51,6 +52,7 @@ namespace LP.Meta
             Console.WriteLine("    --wallet\t\t Specify location of the ixian.wal file");
             Console.WriteLine("    --password\t\t Specify the password for the wallet (be careful with this)");
             Console.WriteLine("    --difficulty\t\t Specify the starting difficulty for the pool");
+            Console.WriteLine("    --diffStep\t\t Specify the difficulty stepping for the pool - how much to increase of decrease diff to keep target share per second");
             Console.WriteLine("    --sharesPerSec\t\t Specify the target shares per second accepted by the pool");
             Console.WriteLine("    --poolFee\t\t Specify the pool fee");
             Console.WriteLine("    --poolFeeAddress\t\t Specify the Ixian address where to collect fee");
@@ -135,6 +137,13 @@ namespace LP.Meta
                         if (!ulong.TryParse(value, out startingDifficulty))
                         {
                             Console.WriteLine("Difficulty should be an integer positive number.");
+                            return false;
+                        }
+                        break;
+                    case "diffStep":
+                        if (!ulong.TryParse(value, out diffStep))
+                        {
+                            Console.WriteLine("Difficulty steping should be an integer positive number.");
                             return false;
                         }
                         break;
@@ -234,6 +243,7 @@ namespace LP.Meta
 
             // starting difficulty
             cmd_parser.Setup<long>("difficulty").Callback(value => startingDifficulty = (ulong)value);
+            cmd_parser.Setup<long>("diffStep").Callback(value => diffStep = (ulong)value);
 
             // target shares per second
             cmd_parser.Setup<int>("sharesPerSec").Callback(value => targetSharesPerSecond = value);

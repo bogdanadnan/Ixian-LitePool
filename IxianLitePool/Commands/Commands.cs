@@ -144,6 +144,18 @@ namespace IxianLitePool
                     logAPI = false;
                     Console.WriteLine("API logging disabled.");
                     break;
+
+                case "setdiff":
+                    handleSetDifficulty(line);
+                    break;
+
+                case "setdiffstep":
+                    handleSetDiffStep(line);
+                    break;
+
+                case "settargetshrps":
+                    handleSetTargetSharePerSecond(line);
+                    break;
             }
         }
 
@@ -461,5 +473,82 @@ namespace IxianLitePool
             Pool.Instance.updateNotificationStatus(noteId, false);
         }
 
+        private void handleSetDifficulty(string line)
+        {
+            string[] split = line.Split(new string[] { " " }, StringSplitOptions.None);
+            if (split.Count() < 2)
+            {
+                Console.WriteLine("Incorrect parameters for difficulty. Should be a number.\n");
+                return;
+            }
+
+            ulong diff = 0;
+            if (!ulong.TryParse(split[1], out diff))
+            {
+                Console.WriteLine("Incorrect parameters for difficulty. Should be a number.\n");
+                return;
+            }
+
+            if (diff < 100000)
+            {
+                diff = 100000;
+            }
+
+            Pool.Instance.setDifficulty(diff);
+
+            Console.WriteLine("Difficulty set to {0}.", diff);
+        }
+
+        private void handleSetDiffStep(string line)
+        {
+            string[] split = line.Split(new string[] { " " }, StringSplitOptions.None);
+            if (split.Count() < 2)
+            {
+                Console.WriteLine("Incorrect parameters for diff step. Should be a number.\n");
+                return;
+            }
+
+            ulong diffStep = 0;
+            if (!ulong.TryParse(split[1], out diffStep))
+            {
+                Console.WriteLine("Incorrect parameters for diff step. Should be a number.\n");
+                return;
+            }
+
+            if (diffStep < 1000)
+            {
+                diffStep = 1000;
+            }
+
+            Config.diffStep = diffStep;
+
+            Console.WriteLine("Difficulty stepping set to {0}.", diffStep);
+        }
+
+        private void handleSetTargetSharePerSecond(string line)
+        {
+            string[] split = line.Split(new string[] { " " }, StringSplitOptions.None);
+            if (split.Count() < 2)
+            {
+                Console.WriteLine("Incorrect parameters for target shares per second. Should be a number bigger than 1.\n");
+                return;
+            }
+
+            int sharePerSecond = 0;
+            if (!int.TryParse(split[1], out sharePerSecond))
+            {
+                Console.WriteLine("Incorrect parameters for target shares per second. Should be a number bigger than 1.\n");
+                return;
+            }
+
+            if (sharePerSecond < 2)
+            {
+                sharePerSecond = 2;
+            }
+
+            Config.targetSharesPerSecond = sharePerSecond;
+
+            Console.WriteLine("Target shares per second set to {0}.", sharePerSecond);
+        }
     }
 }
