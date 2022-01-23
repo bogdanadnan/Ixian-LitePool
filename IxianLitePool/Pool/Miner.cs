@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using LP.DB;
-using static LP.DB.PoolDB;
 
 namespace LP.Pool
 {
@@ -15,27 +14,14 @@ namespace LP.Pool
 
     public class Miner
     {
-        PoolDB.MinerDBType minerDB = null;
-        PoolDB.WorkerDBType workerDB = null;
-        PoolDB.ShareDBType shareDB = null;
+        MinerDBType minerDB = null;
+        WorkerDBType workerDB = null;
+        ShareDBType shareDB = null;
 
         public Miner(string wallet)
         {
             minerDB = PoolDB.Instance.getMiner(wallet);
-            if (minerDB == null)
-            {
-                minerDB = new PoolDB.MinerDBType
-                {
-                    id = -1,
-                    address = wallet,
-                    pending = 0,
-                    lastSeen = DateTime.Now
-                };
-            }
-            else
-            {
-                minerDB.lastSeen = DateTime.Now;
-            }
+            minerDB.lastSeen = DateTime.Now;
         }
 
         public bool isValid()
@@ -61,23 +47,10 @@ namespace LP.Pool
 
         public void selectWorker(string id, string worker)
         {
-            if(minerDB != null)
+            if (minerDB != null)
             {
                 workerDB = PoolDB.Instance.getWorker(minerDB.id, worker);
-                if(workerDB == null)
-                {
-                    workerDB = new PoolDB.WorkerDBType
-                    {
-                        id = -1,
-                        minerId = minerDB.id,
-                        name = worker,
-                        lastSeen = DateTime.Now
-                    };
-                }
-                else
-                {
-                    workerDB.lastSeen = DateTime.Now;
-                }
+                workerDB.lastSeen = DateTime.Now;
             }
         }
 
@@ -94,18 +67,7 @@ namespace LP.Pool
         {
             if (minerDB != null && workerDB != null)
             {
-                shareDB = new PoolDB.ShareDBType
-                {
-                    id = -1,
-                    blockNum = (long)blocknum,
-                    difficulty = (long)difficulty,
-                    minerId = minerDB.id,
-                    nonce = nonce,
-                    blockResolved = verify_result,
-                    processed = false,
-                    timeStamp = DateTime.Now,
-                    workerId = workerDB.id
-                };
+                shareDB = PoolDB.Instance.createShare((long)blocknum, (long)difficulty, nonce, verify_result, minerDB.id, workerDB.id);
             }
         }
 
@@ -143,7 +105,7 @@ namespace LP.Pool
         public static bool checkAddress(string address)
         {
             var miner = PoolDB.Instance.getMiner(address);
-            return miner != null;
+            return miner.id != -1;
         }
     }
 }

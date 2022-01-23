@@ -47,12 +47,11 @@ namespace LP.Pool
                 }
                 else
                 {
-                    states.Add(key, new PoolStateDBType
+                    var poolState = PoolDB.Instance.setPoolState(key, value);
+                    if (poolState != null)
                     {
-                        id = PoolDB.Instance.setPoolState(key, value),
-                        key = key,
-                        value = value
-                    });
+                        states.Add(key, poolState);
+                    }
                 }
             }
         }

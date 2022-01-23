@@ -136,14 +136,9 @@ namespace LP.Pool
 
                 if (blk != null)
                 {
-                    blk.resolution = Math.Max(blk.resolution, (int)resolution);
-
-                    if (activePoolBlock != null && activePoolBlock.blockNum == targetBlockNum)
-                    {
-                        blk.miningEnd = DateTime.Now;
-                    }
-
-                    PoolDB.Instance.updatePoolBlock(blk);
+                    PoolDB.Instance.updatePoolBlock(blk.blockNum,
+                        Math.Max(blk.resolution, (int)resolution),
+                        (!blk.miningEnd.HasValue || (activePoolBlock != null && activePoolBlock.blockNum == targetBlockNum)) ? DateTime.Now : blk.miningEnd.Value);
                 }
 
                 if (activePoolBlock != null && activePoolBlock.blockNum == targetBlockNum)
@@ -173,14 +168,7 @@ namespace LP.Pool
         {
             lock (activePoolBlockLock)
             {
-                PoolDB.Instance.updatePoolBlock(new PoolBlockDBType
-                {
-                    blockNum = (long)blk.blockNum,
-                    miningStart = blk.miningStart.HasValue ? blk.miningStart.Value : DateTime.Now,
-                    miningEnd = null,
-                    poolDifficulty = (long)getDifficulty(),
-                    resolution = (int)blk.resolution
-                });
+                PoolDB.Instance.addPoolBlock((long)blk.blockNum, (long)getDifficulty());
 
                 activePoolBlock = blk;
                 blockDifficulty = blk.difficulty;
@@ -224,12 +212,7 @@ namespace LP.Pool
 
         public int addNotification(NotificationType type, string notification, bool active)
         {
-            return PoolDB.Instance.addNotification(new NotificationDBType
-            {
-                type = (int)type,
-                notification = notification,
-                active = active
-            });
+            return PoolDB.Instance.addNotification((int)type, notification, active);
         }
 
         public void updateNotificationStatus(int id, bool status)

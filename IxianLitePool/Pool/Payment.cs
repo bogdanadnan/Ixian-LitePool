@@ -163,20 +163,8 @@ namespace LP.Pool
                         string txId = node.sendTransaction(miner.address, pendingValue);
                         if (!String.IsNullOrEmpty(txId))
                         {
-                            PaymentDBType payment = new PaymentDBType
-                            {
-                                id = -1,
-                                minerId = miner.id,
-                                txId = txId,
-                                value = ((decimal)pendingValue.getAmount()) / 100000000,
-                                fee = ((decimal)fee.getAmount()) / 100000000,
-                                timeStamp = DateTime.Now,
-                                verified = false,
-                                paymentSession = paymentSession
-                            };
-
-                            payment.id = PoolDB.Instance.addPayment(payment);
-                            if (payment.id > -1)
+                            var payment = PoolDB.Instance.addPayment(miner.id, txId, ((decimal)pendingValue.getAmount()) / 100000000, ((decimal)fee.getAmount()) / 100000000, DateTime.Now, paymentSession);
+                            if (payment != null)
                             {
                                 lock (unverifiedPayments)
                                 {
@@ -196,20 +184,8 @@ namespace LP.Pool
                     string txId = node.sendTransaction(Config.poolFeeAddress, pendingValue);
                     if (!String.IsNullOrEmpty(txId))
                     {
-                        PaymentDBType payment = new PaymentDBType
-                        {
-                            id = -1,
-                            minerId = -1,
-                            txId = txId,
-                            value = ((decimal)pendingValue.getAmount()) / 100000000,
-                            fee = ((decimal)fee.getAmount()) / 100000000,
-                            timeStamp = DateTime.Now,
-                            verified = false,
-                            paymentSession = paymentSession
-                        };
-
-                        payment.id = PoolDB.Instance.addPayment(payment);
-                        if (payment.id > -1)
+                        var payment = PoolDB.Instance.addPayment(-1, txId, ((decimal)pendingValue.getAmount()) / 100000000, ((decimal)fee.getAmount()) / 100000000, DateTime.Now, paymentSession);
+                        if (payment != null)
                         {
                             lock (unverifiedPayments)
                             {
@@ -235,7 +211,7 @@ namespace LP.Pool
             if (unverifiedPayment != null)
             {
                 unverifiedPayment.verified = true;
-                PoolDB.Instance.updatePayment(unverifiedPayment);
+                PoolDB.Instance.setPaymentVerified(unverifiedPayment.id);
                 unverifiedPayments.RemoveAll(p => p.txId == txId);
                 return true;
             }

@@ -211,3 +211,7 @@
     color: #9a9a9a;
     font-size: 1em;
 }
+
+.logo-mini {
+    width: 40px !important;
+}

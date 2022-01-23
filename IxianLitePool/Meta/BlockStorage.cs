@@ -61,27 +61,16 @@ namespace LP.Meta
 
         public void addBlock(RepositoryBlock blk)
         {
-            PoolDB.Instance.addBlock(new BlockDBType
-            {
-                blockNum = (long)blk.blockNum,
-                version = blk.version,
-                difficulty = (long)blk.difficulty,
-                timeStamp = blk.timeStamp,
-                checksum = blk.blockChecksum
-            });
+            PoolDB.Instance.addBlock((long)blk.blockNum, blk.version, (long)blk.difficulty, blk.timeStamp, blk.blockChecksum);
         }
 
         public void updateBlockSolvers(ulong blockNum, ulong minedBlockNum, List<BlockSolver> blockSolvers)
         {
             PoolDB.Instance.deletePowDataFromBlock((long)blockNum, (long)minedBlockNum);
-            PoolDB.Instance.addPowDataForBlock(blockSolvers.ConvertAll(pow => new PowDataDBType
+            foreach (var solver in blockSolvers)
             {
-                blockNum = (long)blockNum,
-                reward = pow.reward,
-                solvedBlock = (long)pow.blockNum,
-                solverAddress = pow.solverAddress,
-                txId = pow.txId
-            }));
+                PoolDB.Instance.addPowDataForBlock((long)blockNum, solver.reward, (long)solver.blockNum, solver.solverAddress, solver.txId);
+            }
         }
 
         public void cleanUpBlocks(ulong limit)

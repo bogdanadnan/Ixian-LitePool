@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Web.Http;
 using LP.Helpers;
 using Microsoft.Extensions.Caching.Memory;
-using static LP.DB.PoolDB;
+using LP.DB;
 
 namespace LP.Pool
 {

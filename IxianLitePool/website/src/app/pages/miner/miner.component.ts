@@ -123,9 +123,30 @@ export class MinerComponent implements OnInit {
                 $('#paymentsTable').DataTable().destroy();
                 $('#paymentsTable').DataTable({
                     pagingType: 'full_numbers',
-                    pageLength: 10,
+                    pageLength: 12,
                     processing: true,
-                    lengthMenu: [5, 10, 25]
+                    lengthMenu: [6, 12, 24],
+                    "footerCallback": function (row, data, start, end, display) {
+                        var api = this.api(), total, pageTotal;
+
+                        total = api
+                            .column(3)
+                            .data()
+                            .reduce(function (a, b) {
+                                return Number(a) + Number(b);
+                            }, 0);
+
+                        pageTotal = api
+                            .column(3, { page: 'current' })
+                            .data()
+                            .reduce(function (a, b) {
+                                return Number(a) + Number(b);
+                            }, 0);
+
+                        $(api.column(3).footer()).html(
+                            'Total IXI: ' + pageTotal.toFixed(2)
+                        );
+                    }
                 });
             }, 0);
         });

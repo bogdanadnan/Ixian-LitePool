@@ -33,6 +33,9 @@ namespace LP.Meta
 
         public static int miningBlocksPoolSize = 100;
 
+        public static string dbProvider = "sqlite";
+        public static string dbConnectionString = "pool.sqlite";
+
         private Config()
         {
 
@@ -59,6 +62,8 @@ namespace LP.Meta
             Console.WriteLine("    --poolUrl\t\t Specify the url that should be used to access the pool - used for display purpose only");
             Console.WriteLine("    --noStart\t\t Don't start API and sync processes at startup - can be started later from console interface");
             Console.WriteLine("    --blocksPoolSize\t\t Set pool size for blocks with lowest difficulty - mining block will be choose from these");
+            Console.WriteLine("    --dbProvider\t\t Database provider - SQLite (default) or MySQL");
+            Console.WriteLine("    --dbConnectionString\t\t Database connection string - default is pool.sqlite for SQLite database");
             Console.WriteLine("----------- Config File Options -----------");
             Console.WriteLine(" Config file options should use parameterName = parameterValue syntax.");
             Console.WriteLine(" Config file options are stored in ixan.cfg file.");
@@ -197,6 +202,14 @@ namespace LP.Meta
                         }
                         break;
 
+                    case "dbProvider":
+                        dbProvider = value;
+                        break;
+
+                    case "dbConnectionString":
+                        dbConnectionString = value;
+                        break;
+
                     default:
                         // unknown key
                         Console.WriteLine("Unknown config parameter was specified '" + key + "'");
@@ -257,6 +270,9 @@ namespace LP.Meta
 
             cmd_parser.Setup<int>("blocksPoolSize").Callback(value => miningBlocksPoolSize = value);
 
+            cmd_parser.Setup<string>("dbProvider").Callback(value => dbProvider = value);
+            cmd_parser.Setup<string>("dbConnectionString").Callback(value => dbConnectionString = value);
+
             cmd_parser.Parse(args);
 
             if(poolFee > 1 || poolFee < 0)
@@ -268,6 +284,8 @@ namespace LP.Meta
             {
                 miningBlocksPoolSize = 100;
             }
+
+            dbConnectionString = dbConnectionString.Replace(':', '=');
 
             return continueProcessing;
         }
